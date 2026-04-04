@@ -67,7 +67,7 @@ struct CaseBriefingView: View {
                                 if narration.isPlaying || narration.isLoading {
                                     narration.stop()
                                 } else {
-                                    Task { await narration.speak(narrationText(mystery)) }
+                                    Task { await narration.speakBriefing(scenarioId: mystery.id, text: narrationText(mystery)) }
                                 }
                             } label: {
                                 HStack(spacing: 6) {
@@ -166,7 +166,7 @@ struct CaseBriefingView: View {
                 // Auto-start narration
                 if !narrationStarted {
                     narrationStarted = true
-                    await narration.speak(narrationText(mystery))
+                    await narration.speakBriefing(scenarioId: mystery.id, text: narrationText(mystery))
                 }
             }
             .onDisappear {

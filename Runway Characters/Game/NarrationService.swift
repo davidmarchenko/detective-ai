@@ -41,6 +41,81 @@ final class NarrationService {
 
     // MARK: - Speak
 
+    /// Speak a briefing using server-cached audio (fast) with fallback to live TTS
+    func speakBriefing(scenarioId: String, text: String) async {
+        stop()
+        isPlaying = true
+        isLoading = true
+        currentWordIndex = -1
+        wordTimings = []
+
+        do {
+            #if os(iOS)
+            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
+            try AVAudioSession.sharedInstance().setActive(true)
+            #endif
+
+            let audio: Data
+            let timings: [NarrationAlignment.WordTiming]
+
+            // Try server-cached audio first
+            if let (cachedAudio, cachedTimings) = try? await fetchCachedBriefing(scenarioId: scenarioId) {
+                print("[NarrationService] Server cache hit (\(cachedAudio.count) bytes)")
+                audio = cachedAudio
+                timings = cachedTimings
+            }
+            // Fall back to local cache
+            else if let cached = Self.loadFromCache(key: Self.cacheKey(for: text)) {
+                print("[NarrationService] Local cache hit (\(cached.audioData.count) bytes)")
+                audio = cached.audioData
+                timings = cached.wordTimings
+            }
+            // Fall back to live TTS
+            else {
+                let (fetchedAudio, fetchedTimings) = try await fetchTTSWithTimestamps(text: text)
+                audio = fetchedAudio
+                timings = fetchedTimings
+                print("[NarrationService] Live TTS fetched \(audio.count) bytes — caching locally")
+                Self.saveToCache(key: Self.cacheKey(for: text), audio: audio, timings: timings)
+            }
+
+            guard isPlaying else { return }
+            wordTimings = timings
+            isLoading = false
+            let tempURL = Self.tempFileURL()
+            try audio.write(to: tempURL)
+            playFromFile(tempURL)
+        } catch {
+            print("[NarrationService] Error: \(error)")
+            isPlaying = false
+            isLoading = false
+        }
+    }
+
+    /// Fetch pre-generated audio from backend
+    private func fetchCachedBriefing(scenarioId: String) async throws -> (Data, [NarrationAlignment.WordTiming]) {
+        let baseURL = Config.backendURL
+
+        // Fetch audio
+        var audioReq = URLRequest(url: URL(string: "\(baseURL)/api/tts/cached/\(scenarioId)?type=audio")!)
+        audioReq.setValue(Config.appAuthToken, forHTTPHeaderField: "X-App-Token")
+        let (audioData, audioResp) = try await URLSession.shared.data(for: audioReq)
+        guard (audioResp as? HTTPURLResponse)?.statusCode == 200 else {
+            throw URLError(.badServerResponse)
+        }
+
+        // Fetch timings
+        var timingsReq = URLRequest(url: URL(string: "\(baseURL)/api/tts/cached/\(scenarioId)?type=timings")!)
+        timingsReq.setValue(Config.appAuthToken, forHTTPHeaderField: "X-App-Token")
+        let (timingsData, timingsResp) = try await URLSession.shared.data(for: timingsReq)
+        guard (timingsResp as? HTTPURLResponse)?.statusCode == 200 else {
+            throw URLError(.badServerResponse)
+        }
+
+        let timings = try JSONDecoder().decode([NarrationAlignment.WordTiming].self, from: timingsData)
+        return (audioData, timings)
+    }
+
     func speak(_ text: String) async {
         stop()
         isPlaying = true
@@ -58,13 +133,12 @@ final class NarrationService {
             let audio: Data
             let timings: [NarrationAlignment.WordTiming]
 
-            // Check cache
+            // Check local cache
             if let cached = Self.loadFromCache(key: cacheKey) {
                 print("[NarrationService] Cache hit (\(cached.audioData.count) bytes)")
                 audio = cached.audioData
                 timings = cached.wordTimings
             } else {
-                // Fetch full audio (showing loading state)
                 let (fetchedAudio, fetchedTimings) = try await fetchTTSWithTimestamps(text: text)
                 audio = fetchedAudio
                 timings = fetchedTimings
