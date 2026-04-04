@@ -95,8 +95,8 @@ final class NarrationService {
             self.audioPlayer = player
             player.prepareToPlay()
             player.play()
-            playbackStartTime = Date()
-            startSyncTimer()
+            print("[NarrationService] Playing \(player.duration)s of cached audio")
+            startCaptionSync()
         } catch {
             print("[NarrationService] Error: \(error)")
             isPlaying = false
