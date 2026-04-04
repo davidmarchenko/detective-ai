@@ -1,0 +1,7 @@
+{
+  "name": "runway-characters-backend",
+  "private": true,
+  "scripts": {
+    "dev": "vercel dev"
+  }
+}

@@ -1,0 +1,343 @@
+{
+  "id": "villa_morada",
+  "title": "The Vanishing Act at Villa Morada",
+  "briefing": "Last night, renowned art dealer Elena Voss was found dead in the locked study of Villa Morada during an exclusive dinner party. The cause of death: blunt force trauma from a bronze bookend. A priceless Rothko painting has vanished from the study wall.\n\nThe villa was locked down immediately. Three guests remain as persons of interest. As the lead detective, you must interrogate the suspects and determine who killed Elena Voss — and what happened to the missing painting.\n\nThe clock is ticking, Detective.",
+  "victimName": "Elena Voss",
+  "setting": "Villa Morada, a cliffside estate on the Mediterranean coast",
+  "quickPlaySuspectId": "victor_hale",
+  "investigationLines": [
+    {
+      "id": "timeline",
+      "label": "Timeline",
+      "icon": "clock",
+      "description": "Reconstruct the sequence of events that night",
+      "maxDepth": 3
+    },
+    {
+      "id": "motive",
+      "label": "Motive",
+      "icon": "flame",
+      "description": "Uncover who had reason to harm Elena",
+      "maxDepth": 3
+    },
+    {
+      "id": "relationships",
+      "label": "Relationships",
+      "icon": "person.2",
+      "description": "Map connections between suspects and victim",
+      "maxDepth": 2
+    },
+    {
+      "id": "evidence",
+      "label": "Physical Evidence",
+      "icon": "magnifyingglass",
+      "description": "Follow the trail of the missing painting",
+      "maxDepth": 3
+    }
+  ],
+  "detectiveActions": [
+    {
+      "id": "press_details",
+      "label": "Press for Details",
+      "icon": "arrow.down.right.magnifyingglass",
+      "description": "Push harder on their last statement",
+      "promptHint": "Say something like: \"That doesn't add up. Tell me more about...\" or \"You're being vague. I need specifics about what happened.\"",
+      "requiresClueCount": null,
+      "requiresContradictionCount": null,
+      "requiresEmotionalShift": null
+    },
+    {
+      "id": "present_evidence",
+      "label": "Present Evidence",
+      "icon": "doc.text.magnifyingglass",
+      "description": "Confront them with a discovered clue",
+      "promptHint": "Pick a clue from your notebook, then say: \"I have evidence that [clue]. How do you explain that?\"",
+      "requiresClueCount": 1,
+      "requiresContradictionCount": null,
+      "requiresEmotionalShift": null
+    },
+    {
+      "id": "catch_contradiction",
+      "label": "Catch Contradiction",
+      "icon": "exclamationmark.triangle",
+      "description": "Point out an inconsistency in their story",
+      "promptHint": "Say: \"Earlier you said [X], but now you're saying [Y]. Which one is it?\"",
+      "requiresClueCount": null,
+      "requiresContradictionCount": 1,
+      "requiresEmotionalShift": null
+    },
+    {
+      "id": "read_emotions",
+      "label": "Read Emotions",
+      "icon": "eye",
+      "description": "Comment on their body language or tone",
+      "promptHint": "Say: \"You seem nervous about that topic\" or \"Why did you just get so defensive?\"",
+      "requiresClueCount": null,
+      "requiresContradictionCount": null,
+      "requiresEmotionalShift": true
+    }
+  ],
+  "solution": {
+    "guiltySubjectId": "victor_hale",
+    "motive": "Elena planned to sell Villa Morada — the estate where Victor grew up and where his mother worked as housekeeper for 30 years. He killed her in a rage when she laughed at his plea to keep the villa.",
+    "explanation": "Victor Hale confronted Elena in the study after dinner service around 9:45 PM. When she dismissed his emotional appeal to keep the villa, he struck her with the bronze bookend in a moment of rage. He then removed the Rothko painting and hid it in the wine cellar behind supply crates to stage the scene as a burglary gone wrong. He returned to the kitchen to establish his alibi, but the sous chef had already left at 9:15 PM — leaving a gap in his timeline he cannot account for."
+  },
+  "suspects": [
+    {
+      "id": "marcus_thorne",
+      "name": "Marcus Thorne",
+      "role": "The Business Partner",
+      "presetId": null,
+      "avatarId": "48db21d5-0f3d-4ba9-9747-a2b6b6620fe6",
+      "briefDescription": "Elena's business partner of 12 years. Recently discovered Elena was planning to dissolve their gallery partnership, costing him millions.",
+      "startScript": "Detective. I've been expecting you. Terrible business, this. Elena and I go way back — I want to help however I can.",
+      "clues": [
+        {
+          "id": "marcus_financial",
+          "text": "Marcus was set to lose $3.2 million if Elena dissolved the partnership",
+          "importance": "red_herring",
+          "lineId": "motive"
+        },
+        {
+          "id": "marcus_alibi",
+          "text": "Marcus was on a phone call with his lawyer from 9:30 to 10:15 PM — phone records confirm this",
+          "importance": "supporting",
+          "lineId": "timeline"
+        },
+        {
+          "id": "marcus_overheard",
+          "text": "Marcus overheard Victor and Elena arguing about the villa sale earlier that evening",
+          "importance": "critical",
+          "lineId": "relationships"
+        }
+      ],
+      "suggestedQuestions": [
+        {
+          "id": "marcus_q1",
+          "text": "Where were you between 9 PM and midnight last night?",
+          "lineId": "timeline",
+          "depth": 0,
+          "unlocksAfterClues": []
+        },
+        {
+          "id": "marcus_q2",
+          "text": "I understand Elena was planning to dissolve your business partnership. That must have been frustrating.",
+          "lineId": "motive",
+          "depth": 0,
+          "unlocksAfterClues": []
+        },
+        {
+          "id": "marcus_q3",
+          "text": "Did you notice anything unusual about the other guests that evening?",
+          "lineId": "relationships",
+          "depth": 0,
+          "unlocksAfterClues": []
+        },
+        {
+          "id": "marcus_q4",
+          "text": "You said you went to get wine around 9:45. Was anyone in the kitchen?",
+          "lineId": "timeline",
+          "depth": 1,
+          "unlocksAfterClues": ["marcus_alibi"]
+        },
+        {
+          "id": "marcus_q5",
+          "text": "Tell me more about the argument you overheard between Victor and Elena. What exactly did they say?",
+          "lineId": "relationships",
+          "depth": 1,
+          "unlocksAfterClues": ["marcus_overheard"]
+        },
+        {
+          "id": "marcus_q6",
+          "text": "The missing painting is worth $4.5 million. With your gallery expertise, who would know how to move a piece like that?",
+          "lineId": "evidence",
+          "depth": 1,
+          "unlocksAfterClues": ["marcus_financial"]
+        }
+      ],
+      "personality": "You are Marcus Thorne, 55, art gallery owner and Elena Voss's business partner of 12 years. A detective is questioning you about Elena's disappearance at Villa Morada. You are completely innocent and cooperating fully.\n\nSITUATION: Elena planned to dissolve your partnership, costing you $3 million. You were upset but handling it through lawyers.\n\nALIBI: Phone call with your lawyer David Chen, 9:30-10:15 PM in the library. Phone records confirm.\n\nKEY KNOWLEDGE:\n- At 7 PM you overheard Victor and Elena arguing in the hallway. Victor was upset about selling the villa. Elena dismissed him.\n- Around 9:45 you went to get wine and the kitchen was empty — Victor was gone.\n- The missing Rothko painting was worth $4.5 million.\n\nBEHAVIOR: Be polished, articulate, slightly condescending. Freely admit your financial disagreement — you have a solid alibi. Mention the argument between Victor and Elena. Use reveal_clue with these exact IDs: marcus_financial, marcus_alibi, marcus_overheard. Use suspicion_shift when pointing to Victor. Use emotional_shift if accused — become indignant. Keep responses 2-4 sentences."
+    },
+    {
+      "id": "isabelle_crane",
+      "name": "Isabelle Crane",
+      "role": "The Rival Collector",
+      "presetId": null,
+      "avatarId": "90b14afd-c8ff-4dde-9bec-b9284285a05a",
+      "briefDescription": "A social media personality and art collector. Elena publicly accused her of buying forgeries, damaging her reputation.",
+      "startScript": "Oh, Detective. I still can't believe what happened. Elena and I had our differences, but this is just awful.",
+      "clues": [
+        {
+          "id": "isabelle_grudge",
+          "text": "Elena publicly humiliated Isabelle at a gallery opening, calling her collection 'bargain bin forgeries'",
+          "importance": "red_herring",
+          "lineId": "motive"
+        },
+        {
+          "id": "isabelle_saw_victor",
+          "text": "Isabelle saw Victor heading toward the east wing (where the study is) around 9:40 PM, not in the kitchen",
+          "importance": "critical",
+          "lineId": "timeline"
+        },
+        {
+          "id": "isabelle_wine_cellar",
+          "text": "Isabelle went to the wine cellar for a bottle around 10 PM and noticed supply crates had been recently moved",
+          "importance": "critical",
+          "lineId": "evidence"
+        }
+      ],
+      "suggestedQuestions": [
+        {
+          "id": "isabelle_q1",
+          "text": "Tell me about your relationship with Elena. I heard things were... complicated.",
+          "lineId": "relationships",
+          "depth": 0,
+          "unlocksAfterClues": []
+        },
+        {
+          "id": "isabelle_q2",
+          "text": "Where were you between 9 and 11 PM last night?",
+          "lineId": "timeline",
+          "depth": 0,
+          "unlocksAfterClues": []
+        },
+        {
+          "id": "isabelle_q3",
+          "text": "Did you see anyone else moving around the villa that evening?",
+          "lineId": "timeline",
+          "depth": 0,
+          "unlocksAfterClues": []
+        },
+        {
+          "id": "isabelle_q4",
+          "text": "You mentioned going to the wine cellar. Did you notice anything unusual down there?",
+          "lineId": "evidence",
+          "depth": 1,
+          "unlocksAfterClues": ["isabelle_saw_victor"]
+        },
+        {
+          "id": "isabelle_q5",
+          "text": "You saw Victor heading toward the east wing at 9:40. Did he say anything? How did he look?",
+          "lineId": "timeline",
+          "depth": 1,
+          "unlocksAfterClues": ["isabelle_saw_victor"]
+        },
+        {
+          "id": "isabelle_q6",
+          "text": "Supply crates moved in the wine cellar — could something have been hidden behind them?",
+          "lineId": "evidence",
+          "depth": 2,
+          "unlocksAfterClues": ["isabelle_wine_cellar"]
+        }
+      ],
+      "personality": "You are Isabelle Crane, 34, social media personality and art collector. A detective is questioning you about the disappearance of Elena Voss at Villa Morada. You are completely innocent and cooperating fully.\n\nSITUATION: Elena embarrassed you at a gallery opening, calling your collection fake. It went viral and damaged your brand. You strongly disliked her but your plan was to prove your art authentic at next month's auction.\n\nALIBI: Garden lounge 9-10:30 PM, alone with wine. Went to wine cellar around 10 PM for another bottle.\n\nKEY KNOWLEDGE:\n- At 9:40 PM you saw Victor Hale heading toward the east wing, away from his kitchen. He looked agitated.\n- In the wine cellar at 10 PM, supply crates near the back wall had been recently moved — drag marks on the dusty floor.\n- You heard Elena planned to sell the villa.\n\nBEHAVIOR: Be dramatic, expressive, gossipy. Freely admit disliking Elena. Share what you saw — you enjoy being helpful. Use reveal_clue with these exact IDs: isabelle_grudge, isabelle_saw_victor, isabelle_wine_cellar. Use suspicion_shift when pointing to Victor's odd behavior. Use emotional_shift when discussing Elena's public comments about you. Keep responses 2-4 sentences."
+    },
+    {
+      "id": "victor_hale",
+      "name": "Victor Hale",
+      "role": "The Private Chef",
+      "presetId": null,
+      "avatarId": "26272dfe-2b74-4263-85cb-0e2f50cd7c9f",
+      "briefDescription": "Villa Morada's private chef. Grew up on the estate where his mother was the housekeeper for 30 years. Unusually emotional about the property.",
+      "startScript": "Detective. Yes, of course, I'll answer your questions. Anything to help. Elena was... she was a good employer. This is shocking to all of us.",
+      "clues": [
+        {
+          "id": "victor_timeline",
+          "text": "Victor claims he was cleaning the kitchen until 11 PM, but the sous chef left at 9:15 when cleanup was nearly done",
+          "importance": "critical",
+          "lineId": "timeline"
+        },
+        {
+          "id": "victor_villa_connection",
+          "text": "Victor's mother was the villa's housekeeper for 30 years. He grew up there and has deep emotional ties to the property",
+          "importance": "critical",
+          "lineId": "relationships"
+        },
+        {
+          "id": "victor_art_knowledge",
+          "text": "Victor studied art history in college before becoming a chef — he would know the Rothko's value",
+          "importance": "supporting",
+          "lineId": "evidence"
+        },
+        {
+          "id": "victor_argument",
+          "text": "Victor and Elena argued about the villa sale earlier that evening",
+          "importance": "critical",
+          "lineId": "motive"
+        }
+      ],
+      "suggestedQuestions": [
+        {
+          "id": "victor_q1",
+          "text": "Walk me through your evening after dinner service. What exactly were you doing?",
+          "lineId": "timeline",
+          "depth": 0,
+          "unlocksAfterClues": []
+        },
+        {
+          "id": "victor_q2",
+          "text": "Tell me about your history with this villa. How long have you worked here?",
+          "lineId": "relationships",
+          "depth": 0,
+          "unlocksAfterClues": []
+        },
+        {
+          "id": "victor_q3",
+          "text": "How would you describe your relationship with Elena?",
+          "lineId": "relationships",
+          "depth": 0,
+          "unlocksAfterClues": []
+        },
+        {
+          "id": "victor_q4",
+          "text": "Your sous chef says cleanup was done by 9:15. Why were you still in the kitchen for nearly two more hours?",
+          "lineId": "timeline",
+          "depth": 1,
+          "unlocksAfterClues": ["victor_timeline"]
+        },
+        {
+          "id": "victor_q5",
+          "text": "I heard your mother worked here for 30 years and you grew up on this estate. That must make the sale very personal.",
+          "lineId": "motive",
+          "depth": 1,
+          "unlocksAfterClues": ["victor_villa_connection"]
+        },
+        {
+          "id": "victor_q6",
+          "text": "Were you aware Elena was planning to sell Villa Morada? Did you discuss it with her?",
+          "lineId": "motive",
+          "depth": 1,
+          "unlocksAfterClues": ["victor_villa_connection"]
+        },
+        {
+          "id": "victor_q7",
+          "text": "Interesting background for a chef — you studied art history at university. You'd know exactly what that Rothko is worth.",
+          "lineId": "evidence",
+          "depth": 1,
+          "unlocksAfterClues": ["victor_art_knowledge"]
+        },
+        {
+          "id": "victor_q8",
+          "text": "Someone saw you heading toward the east wing at 9:40 PM. That's nowhere near the kitchen.",
+          "lineId": "timeline",
+          "depth": 2,
+          "unlocksAfterClues": ["isabelle_saw_victor"]
+        },
+        {
+          "id": "victor_q9",
+          "text": "We found crates in the wine cellar that had been recently moved. What's behind those crates, Victor?",
+          "lineId": "evidence",
+          "depth": 2,
+          "unlocksAfterClues": ["isabelle_wine_cellar"]
+        },
+        {
+          "id": "victor_q10",
+          "text": "I think you went to the study at 9:45, confronted Elena about the sale, and things went badly. The painting is in the wine cellar. Am I wrong?",
+          "lineId": "evidence",
+          "depth": 2,
+          "unlocksAfterClues": ["isabelle_saw_victor", "isabelle_wine_cellar", "victor_argument"]
+        }
+      ],
+      "personality": "You are Victor Hale, 42, private chef at Villa Morada. A detective is questioning you about Elena Voss's disappearance. SECRET: You are responsible for what happened to Elena. She planned to sell the villa where your mother was housekeeper for 30 years and you grew up. At 9:45 PM you confronted her in the study. She laughed and dismissed you. Things escalated and she was hurt. You moved the Rothko painting to the wine cellar behind crates to make it look like a break-in, then returned to the kitchen by 10:10.\n\nCOVER STORY: Cleaning the kitchen 9-11 PM. Heard nothing.\n\nCONTRADICTIONS: Kitchen done by 9:15 when sous chef left. Seen heading to east wing at 9:40. Studied art history in college. Argued with Elena about the sale.\n\nBEHAVIOR: Start calm and cooperative. Be detailed about timeline but the gap exists. If asked about the villa or mother, get emotional but minimize. If asked about art, get nervous. If caught in contradiction, get defensive. If confronted with 3+ pieces of evidence, panic. If accused with strong evidence, eventually break down. Use reveal_clue with these exact IDs: victor_timeline, victor_villa_connection, victor_art_knowledge, victor_argument. Use suspicion_shift, contradiction, emotional_shift, interrogation_milestone tools appropriately. Never break character. Keep responses 2-4 sentences."
+    }
+  ]
+}

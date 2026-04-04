@@ -1,0 +1,20 @@
+# Secrets
+.env
+.env.local
+**/Secrets.swift
+
+# Xcode
+*.xcuserstate
+**/xcuserdata/
+DerivedData/
+.build/
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Character source images (used for Runway avatar creation, not needed to build)
+Character Images/
+
+# macOS
+.DS_Store
