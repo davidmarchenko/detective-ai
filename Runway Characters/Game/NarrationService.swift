@@ -80,11 +80,23 @@ final class NarrationService {
             }
 
             guard isPlaying else { return }
+
             wordTimings = timings
             isLoading = false
-            let tempURL = Self.tempFileURL()
-            try audio.write(to: tempURL)
-            playFromFile(tempURL)
+
+            guard !audio.isEmpty else {
+                print("[NarrationService] No audio data received")
+                isPlaying = false
+                return
+            }
+
+            // Play from memory (same as speak())
+            let player = try AVAudioPlayer(data: audio)
+            self.audioPlayer = player
+            player.prepareToPlay()
+            player.play()
+            playbackStartTime = Date()
+            startSyncTimer()
         } catch {
             print("[NarrationService] Error: \(error)")
             isPlaying = false
