@@ -308,7 +308,7 @@ struct InterrogationView: View {
                 .foregroundStyle(DT.Colors.fog)
                 .padding(.horizontal, DT.Space.lg)
                 .padding(.vertical, DT.Space.md)
-                .background(DT.Colors.ember, in: UnevenRoundedRectangle(topLeadingRadius: DT.Radius.sm, bottomTrailingRadius: DT.Radius.sm, topTrailingRadius: DT.Radius.md, bottomLeadingRadius: DT.Radius.md))
+                .background(DT.Colors.ember, in: UnevenRoundedRectangle(topLeadingRadius: DT.Radius.sm, bottomLeadingRadius: DT.Radius.md, bottomTrailingRadius: DT.Radius.sm, topTrailingRadius: DT.Radius.md))
                 .shadow(color: DT.Colors.ember.opacity(0.4), radius: 6)
             }
         }
