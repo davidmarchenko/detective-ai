@@ -18,6 +18,11 @@ struct InterrogationView: View {
     @State private var cardDismissTask: Task<Void, Never>?
     @State private var ringScale: CGFloat = 0.6
 
+    // Haptic generators — prepared once, reused
+    private let hapticMedium = UIImpactFeedbackGenerator(style: .medium)
+    private let hapticLight = UIImpactFeedbackGenerator(style: .light)
+    private let hapticNotify = UINotificationFeedbackGenerator()
+
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
@@ -479,7 +484,7 @@ struct InterrogationView: View {
 
     private func handleGameMasterUIEvent(_ event: GameMasterService.GameMasterEvent) {
         for clue in event.cluesDetected {
-            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            hapticMedium.impactOccurred()
             showCard(NotificationCard(
                 label: clue.importance == "critical" ? "KEY EVIDENCE" : "CLUE FOUND",
                 text: clue.text,
@@ -487,7 +492,7 @@ struct InterrogationView: View {
             ))
         }
         if event.contradictionDetected != nil {
-            UINotificationFeedbackGenerator().notificationOccurred(.warning)
+            hapticNotify.notificationOccurred(.warning)
             showCard(NotificationCard(label: "CONTRADICTION", text: "You caught an inconsistency!", accentColor: .red))
         }
         if let suggestion = event.suggestedQuestion, activeCard == nil {
@@ -517,7 +522,7 @@ struct InterrogationView: View {
                gameState.discoveredClues.contains(where: { $0.clueId == clueId }) { break }
             if let text = args["clue_text"] as? String {
                 let importance = args["importance"] as? String ?? "supporting"
-                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                hapticMedium.impactOccurred()
                 showCard(NotificationCard(
                     label: importance == "critical" ? "KEY EVIDENCE" : "CLUE FOUND",
                     text: text,
@@ -525,16 +530,16 @@ struct InterrogationView: View {
                 ))
             }
         case "contradiction":
-            UINotificationFeedbackGenerator().notificationOccurred(.warning)
+            hapticNotify.notificationOccurred(.warning)
             showCard(NotificationCard(label: "CONTRADICTION", text: "You caught an inconsistency!", accentColor: .red))
         case "emotional_shift":
             if let emotion = args["emotion"] as? String {
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                hapticLight.impactOccurred()
                 withAnimation { currentEmotion = emotion }
             }
         case "interrogation_milestone":
             if let milestone = args["milestone"] as? String {
-                UINotificationFeedbackGenerator().notificationOccurred(.success)
+                hapticNotify.notificationOccurred(.success)
                 let (label, text, color) = milestoneDisplay(milestone)
                 showCard(NotificationCard(label: label, text: text, accentColor: color))
             }

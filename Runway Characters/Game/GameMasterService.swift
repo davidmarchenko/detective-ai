@@ -39,29 +39,41 @@ final class GameMasterService {
 
     // MARK: - Feed Transcript
 
+    private var pendingAnalysis = false
+
     /// Called every time a new transcription segment arrives from LiveKit
     func feedTranscript(role: String, text: String) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         conversationLog.append((role, trimmed))
 
+        // Cap conversation log to prevent unbounded growth
+        if conversationLog.count > 100 { conversationLog.removeFirst() }
+
         // Only analyze after suspect speaks (not user)
         guard role == "assistant" || role == "suspect" else { return }
 
-        // Don't queue if already analyzing — let the current request finish
-        guard !isAnalyzing else { return }
+        // If already analyzing, flag that we need another pass when done
+        if isAnalyzing {
+            pendingAnalysis = true
+            return
+        }
 
         // Throttle: don't analyze too frequently
         let timeSinceLastAnalysis = Date().timeIntervalSince(lastAnalysisTime)
         guard timeSinceLastAnalysis >= minAnalysisInterval else { return }
 
-        // Schedule analysis after a short delay to batch rapid transcript segments
-        // Don't cancel in-flight requests — only cancel the sleep delay
         analysisTask?.cancel()
         analysisTask = Task {
             try? await Task.sleep(for: .seconds(1.5))
             guard !Task.isCancelled else { return }
             await analyze()
+            // If transcripts arrived during analysis, run again
+            if pendingAnalysis {
+                pendingAnalysis = false
+                try? await Task.sleep(for: .seconds(2))
+                await analyze()
+            }
         }
     }
 

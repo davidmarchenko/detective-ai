@@ -211,15 +211,18 @@ final class SessionManager {
         }
     }
 
+    private var reconnectTask: Task<Void, Never>?
+
     fileprivate func handleDisconnected() {
         if state != .ending && state != .ended {
-            // Brief grace period — check if LiveKit reconnects
+            // Cancel any previous grace period task
+            reconnectTask?.cancel()
             state = .error("Connection lost. Attempting to reconnect...")
-            Task {
+            reconnectTask = Task {
                 try? await Task.sleep(for: .seconds(5))
-                // If still not reconnected after 5s, end the session
+                guard !Task.isCancelled else { return }
                 if let room = _room, room.connectionState == .connected {
-                    state = .active  // Reconnected!
+                    state = .active
                 } else if state != .ending && state != .ended {
                     state = .ended
                     cleanup()
