@@ -22,38 +22,32 @@ struct InterrogationView: View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            // Avatar video
+            // Avatar video (full bleed)
             if let videoTrack = session.remoteVideoTrack {
                 SwiftUIVideoView(videoTrack)
                     .ignoresSafeArea()
             }
 
-            // Corner brackets overlay (decorative, non-interactive)
-            cornerBrackets
-                .allowsHitTesting(false)
+            // Corner brackets (decorative, respects safe area insets)
+            cornerBrackets.allowsHitTesting(false)
 
-            // Main HUD
+            // Main HUD — respects safe area automatically
             VStack(spacing: 0) {
                 topBar
                 Spacer()
                 if showTranscription { transcriptView }
+                // Notification card sits between transcript and controls
+                if let card = activeCard, session.state == .active {
+                    notificationCard(card)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .transition(.opacity)
+                        .animation(.easeOut(duration: 0.3), value: activeCard?.id)
+                }
                 controlBar
             }
 
-            // Notification card — floating overlay, pinned above control bar
-            if let card = activeCard, session.state == .active {
-                VStack {
-                    Spacer()
-                    notificationCard(card)
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 64) // above the 52pt control bar
-                }
-                .transition(.opacity)
-                .animation(.easeOut(duration: 0.3), value: activeCard?.id)
-                .allowsHitTesting(true)
-            }
-
-            // Overlays
+            // Modal overlays
             if session.state == .connecting { connectingOverlay }
             if case .error(let msg) = session.state { errorOverlay(msg) }
             if showEndConfirm { endConfirmOverlay }
@@ -106,25 +100,34 @@ struct InterrogationView: View {
         .onDisappear { gameState.gameMaster.reset() }
     }
 
-    // MARK: - Corner Brackets (Decorative)
+    // MARK: - Corner Brackets
 
     private var cornerBrackets: some View {
         GeometryReader { geo in
-            let w = geo.size.width
-            let h = geo.size.height
+            let safeTop = geo.safeAreaInsets.top
+            let safeBottom = geo.safeAreaInsets.bottom
+            let w = geo.size.width + geo.safeAreaInsets.leading + geo.safeAreaInsets.trailing
+            let h = geo.size.height + safeTop + safeBottom
+            let s: CGFloat = 20
+            let inset: CGFloat = max(24, safeTop > 0 ? 20 : 24) // respect rounded screen corners
             Path { p in
-                let s: CGFloat = 24
-                let i: CGFloat = 16
-                // Top-left
-                p.move(to: CGPoint(x: i, y: i + s)); p.addLine(to: CGPoint(x: i, y: i)); p.addLine(to: CGPoint(x: i + s, y: i))
-                // Top-right
-                p.move(to: CGPoint(x: w-i-s, y: i)); p.addLine(to: CGPoint(x: w-i, y: i)); p.addLine(to: CGPoint(x: w-i, y: i + s))
-                // Bottom-left
-                p.move(to: CGPoint(x: i, y: h-i-s)); p.addLine(to: CGPoint(x: i, y: h-i)); p.addLine(to: CGPoint(x: i + s, y: h-i))
-                // Bottom-right
-                p.move(to: CGPoint(x: w-i-s, y: h-i)); p.addLine(to: CGPoint(x: w-i, y: h-i)); p.addLine(to: CGPoint(x: w-i, y: h-i-s))
+                p.move(to: CGPoint(x: inset, y: safeTop + inset + s))
+                p.addLine(to: CGPoint(x: inset, y: safeTop + inset))
+                p.addLine(to: CGPoint(x: inset + s, y: safeTop + inset))
+
+                p.move(to: CGPoint(x: w - inset - s, y: safeTop + inset))
+                p.addLine(to: CGPoint(x: w - inset, y: safeTop + inset))
+                p.addLine(to: CGPoint(x: w - inset, y: safeTop + inset + s))
+
+                p.move(to: CGPoint(x: inset, y: h - safeBottom - inset - s))
+                p.addLine(to: CGPoint(x: inset, y: h - safeBottom - inset))
+                p.addLine(to: CGPoint(x: inset + s, y: h - safeBottom - inset))
+
+                p.move(to: CGPoint(x: w - inset - s, y: h - safeBottom - inset))
+                p.addLine(to: CGPoint(x: w - inset, y: h - safeBottom - inset))
+                p.addLine(to: CGPoint(x: w - inset, y: h - safeBottom - inset - s))
             }
-            .stroke(DT.Colors.warmGlow.opacity(0.2), lineWidth: 1)
+            .stroke(DT.Colors.warmGlow.opacity(0.15), lineWidth: 1)
         }
         .ignoresSafeArea()
     }
@@ -133,47 +136,42 @@ struct InterrogationView: View {
 
     private var topBar: some View {
         HStack(spacing: 12) {
-            // Name
             VStack(alignment: .leading, spacing: 2) {
                 Text(suspect.name)
                     .font(.system(size: 16, weight: .bold, design: .serif))
-                    .foregroundStyle(DT.Colors.fog)
+                    .foregroundStyle(.white)
                     .lineLimit(1)
                 Text(suspect.role)
-                    .font(DT.Typo.tagLabel)
-                    .foregroundStyle(DT.Colors.warmGlow.opacity(0.7))
-                    .tracking(1)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.white.opacity(0.6))
+                    .lineLimit(1)
             }
 
             Spacer(minLength: 4)
 
-            // Suspicion
             if gameState.gameMaster.suspicionLevel > 0 {
                 HStack(spacing: 4) {
                     Circle().fill(suspicionColor).frame(width: 6, height: 6)
-                        .shadow(color: suspicionColor, radius: 3)
                     Text("\(Int(gameState.gameMaster.suspicionLevel * 100))%")
                         .font(.system(size: 11, weight: .bold).monospacedDigit())
                         .foregroundStyle(suspicionColor)
                 }
             }
 
-            // Clues
             if !gameState.discoveredClues.isEmpty {
                 Label("\(gameState.discoveredClues.count)", systemImage: "magnifyingglass")
                     .font(.system(size: 12, weight: .bold).monospacedDigit())
-                    .foregroundStyle(DT.Colors.warmGlow)
+                    .foregroundStyle(.orange)
             }
 
-            // Timer
             if let callStart {
                 CallTimerView(startDate: callStart)
                     .font(.system(size: 12, weight: .medium).monospacedDigit())
-                    .foregroundStyle(DT.Colors.fog.opacity(0.6))
+                    .foregroundStyle(.white.opacity(0.5))
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
         .background(Color.black.opacity(0.7))
     }
 
@@ -182,30 +180,35 @@ struct InterrogationView: View {
     private var transcriptView: some View {
         ScrollViewReader { proxy in
             ScrollView(.vertical, showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: 8) {
                     ForEach(session.transcriptions) { entry in
                         let isUser = entry.role == "user"
-                        HStack(alignment: .top, spacing: 8) {
-                            Text(isUser ? "YOU" : suspect.name.components(separatedBy: " ").first?.uppercased() ?? "—")
-                                .font(.system(size: 9, weight: .bold, design: .monospaced))
-                                .foregroundStyle(isUser ? DT.Colors.suggestion : DT.Colors.warmGlow)
-                                .frame(width: 40, alignment: .trailing)
+                        HStack(alignment: .top, spacing: 10) {
+                            // Role tag — fixed width so text aligns
+                            Text(isUser ? "You" : suspect.name.components(separatedBy: " ").first ?? "—")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(isUser ? .blue : .orange)
+                                .frame(width: 44, alignment: .trailing)
 
+                            // Accent line — min height ensures visibility
                             Rectangle()
-                                .fill(isUser ? DT.Colors.suggestion.opacity(0.3) : DT.Colors.warmGlow.opacity(0.2))
-                                .frame(width: 2)
+                                .fill(isUser ? Color.blue.opacity(0.3) : Color.orange.opacity(0.2))
+                                .frame(width: 2, minHeight: 16)
 
+                            // Text — no lineLimit, wraps freely
                             Text(entry.text)
                                 .font(.system(size: 14))
-                                .foregroundStyle(DT.Colors.fog.opacity(isUser ? 0.6 : 0.9))
+                                .foregroundStyle(.white.opacity(isUser ? 0.6 : 0.9))
+                                .fixedSize(horizontal: false, vertical: true)
                         }
-                        .padding(.vertical, 2)
                         .id(entry.id)
                     }
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 8)
             }
-            .frame(maxHeight: 180)
+            .frame(maxHeight: 200)
+            .background(Color.black.opacity(0.5))
             .mask(LinearGradient(colors: [.clear, .black, .black, .black], startPoint: .top, endPoint: .bottom))
             .onChange(of: session.transcriptions.count) { _, _ in
                 if let last = session.transcriptions.last {
@@ -218,59 +221,49 @@ struct InterrogationView: View {
     // MARK: - Control Bar
 
     private var controlBar: some View {
-        HStack(spacing: 1) {
-            // Mic
-            controlButton(
-                icon: isMuted ? "mic.slash.fill" : "mic.fill",
-                label: isMuted ? "Unmute" : "Mute",
-                isActive: !isMuted,
-                tint: .blue
-            ) {
-                isMuted.toggle()
-                Task { try? await session._room?.localParticipant.setMicrophone(enabled: !isMuted) }
-            }
+        VStack(spacing: 0) {
+            // Thin separator
+            Rectangle().fill(.white.opacity(0.1)).frame(height: 0.5)
 
-            // Transcript
-            controlButton(
-                icon: "text.bubble.fill",
-                label: "Log",
-                isActive: showTranscription,
-                tint: .white
-            ) {
-                withAnimation { showTranscription.toggle() }
-            }
-
-            // Investigate
-            ZStack(alignment: .topTrailing) {
-                controlButton(
-                    icon: "magnifyingglass",
-                    label: "Clues",
-                    isActive: showInvestigate,
-                    tint: .orange
-                ) {
-                    showInvestigate.toggle()
-                    gameState.newQuestionsAvailable = false
+            HStack(spacing: 0) {
+                controlButton(icon: isMuted ? "mic.slash.fill" : "mic.fill",
+                              label: isMuted ? "Unmute" : "Mute",
+                              isActive: !isMuted, tint: .blue) {
+                    isMuted.toggle()
+                    Task { try? await session._room?.localParticipant.setMicrophone(enabled: !isMuted) }
                 }
-                if gameState.newQuestionsAvailable && !showInvestigate {
-                    Circle()
-                        .fill(.orange)
-                        .frame(width: 8, height: 8)
-                        .shadow(color: .orange, radius: 3)
-                        .offset(x: -8, y: 8)
+
+                controlButton(icon: "text.bubble.fill", label: "Log",
+                              isActive: showTranscription, tint: .white) {
+                    withAnimation { showTranscription.toggle() }
+                }
+
+                ZStack(alignment: .topTrailing) {
+                    controlButton(icon: "magnifyingglass", label: "Clues",
+                                  isActive: showInvestigate, tint: .orange) {
+                        showInvestigate.toggle()
+                        gameState.newQuestionsAvailable = false
+                    }
+                    if gameState.newQuestionsAvailable && !showInvestigate {
+                        Circle().fill(.orange).frame(width: 8, height: 8)
+                            .shadow(color: .orange, radius: 3)
+                            .offset(x: -8, y: 8)
+                    }
+                }
+
+                // End call
+                Button { showEndConfirm = true } label: {
+                    Image(systemName: "phone.down.fill")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                        .background(Color.red)
                 }
             }
-
-            // End call — red, unmissable
-            Button { showEndConfirm = true } label: {
-                Image(systemName: "phone.down.fill")
-                    .font(.system(size: 22, weight: .bold))
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color.red)
-            }
+            .frame(height: 56)
         }
-        .frame(height: 52)
-        .background(Color.black.opacity(0.85)) // opaque — always readable
+        .background(Color.black.opacity(0.85))
     }
 
     private func controlButton(icon: String, label: String, isActive: Bool, tint: Color, action: @escaping () -> Void) -> some View {
@@ -283,22 +276,24 @@ struct InterrogationView: View {
                     .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(isActive ? tint.opacity(0.8) : .white.opacity(0.4))
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(isActive ? tint.opacity(0.15) : .clear)
+            .frame(maxWidth: .infinity)
+            .frame(height: 56) // explicit height — matches bar
+            .contentShape(Rectangle()) // full area is tappable
         }
     }
 
     // MARK: - Notification Card
 
     private func notificationCard(_ card: NotificationCard) -> some View {
-        HStack(spacing: 0) {
-            RoundedRectangle(cornerRadius: 1)
+        HStack(alignment: .top, spacing: 10) {
+            // Accent bar
+            RoundedRectangle(cornerRadius: 2)
                 .fill(card.accentColor)
-                .frame(width: 4)
-                .padding(.vertical, 6)
-                .shadow(color: card.accentColor.opacity(0.4), radius: 3)
+                .frame(width: 4, minHeight: 30)
+                .shadow(color: card.accentColor.opacity(0.3), radius: 3)
 
-            VStack(alignment: .leading, spacing: 3) {
+            // Content
+            VStack(alignment: .leading, spacing: 4) {
                 if let label = card.label {
                     Text(label)
                         .font(.system(size: 9, weight: .bold, design: .monospaced))
@@ -307,30 +302,31 @@ struct InterrogationView: View {
                 }
                 Text(card.text)
                     .font(.system(size: 13))
-                    .foregroundStyle(DT.Colors.fog)
-                    .lineLimit(2)
+                    .foregroundStyle(.white.opacity(0.9))
+                    .lineLimit(3) // enough for suggestions
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.leading, 10)
 
-            Spacer(minLength: 8)
+            Spacer(minLength: 4)
 
+            // Dismiss
             Button {
                 withAnimation { activeCard = nil }
                 if let questionId = card.questionId { gameState.usedQuestionIds.insert(questionId) }
             } label: {
                 Image(systemName: "xmark")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(DT.Colors.smoke)
-                    .frame(width: 28, height: 28)
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(.white.opacity(0.3))
+                    .frame(width: 32, height: 32) // 32pt minimum tap target
+                    .contentShape(Rectangle())
             }
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .frame(maxHeight: 80) // NEVER cover the screen
-        .background(Color.black.opacity(0.85), in: RoundedRectangle(cornerRadius: 12))
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(Color.black.opacity(0.85), in: RoundedRectangle(cornerRadius: 14))
         .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(card.accentColor.opacity(0.3), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(card.accentColor.opacity(0.25), lineWidth: 1)
         )
     }
 
@@ -348,8 +344,7 @@ struct InterrogationView: View {
             withAnimation { activeCard = nil }
             try? await Task.sleep(for: .seconds(0.3))
             if !cardQueue.isEmpty {
-                let next = cardQueue.removeFirst()
-                showCard(next)
+                showCard(cardQueue.removeFirst())
             }
         }
     }
@@ -358,7 +353,7 @@ struct InterrogationView: View {
 
     private var connectingOverlay: some View {
         ZStack {
-            DT.Colors.void.ignoresSafeArea()
+            Color.black.ignoresSafeArea()
 
             RadialGradient(
                 colors: [DT.Colors.warmGlow.opacity(0.05), .clear],
@@ -382,11 +377,12 @@ struct InterrogationView: View {
                 VStack(spacing: 8) {
                     Text(suspect.name)
                         .font(.system(size: 20, weight: .bold, design: .serif))
-                        .foregroundStyle(DT.Colors.fog)
-
+                        .foregroundStyle(.white)
                     Text(session.connectingStatus.isEmpty ? "Entering interrogation room..." : session.connectingStatus)
-                        .font(DT.Typo.caption)
-                        .foregroundStyle(DT.Colors.steel)
+                        .font(.system(size: 14))
+                        .foregroundStyle(.white.opacity(0.5))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 32)
                 }
 
                 Button {
@@ -394,8 +390,8 @@ struct InterrogationView: View {
                     gameState.endInterrogation()
                 } label: {
                     Text("Cancel")
-                        .font(DT.Typo.caption)
-                        .foregroundStyle(DT.Colors.smoke)
+                        .font(.system(size: 14))
+                        .foregroundStyle(.white.opacity(0.4))
                 }
                 .padding(.top, 16)
             }
@@ -408,30 +404,32 @@ struct InterrogationView: View {
     private func errorOverlay(_ message: String) -> some View {
         let isReconnecting = message.contains("reconnect")
         return ZStack {
-            DT.Colors.void.opacity(0.9).ignoresSafeArea()
-            VStack(spacing: DT.Space.lg) {
+            Color.black.opacity(0.9).ignoresSafeArea()
+            VStack(spacing: 16) {
                 if isReconnecting {
-                    ProgressView().scaleEffect(1.2).tint(DT.Colors.warmGlow)
-                    Text("Connection Lost").font(DT.Typo.cardTitle).foregroundStyle(DT.Colors.fog)
-                    Text("Trying to reconnect...").font(DT.Typo.caption).foregroundStyle(DT.Colors.steel)
+                    ProgressView().scaleEffect(1.2).tint(.orange)
+                    Text("Connection Lost").font(.headline).foregroundStyle(.white)
+                    Text("Trying to reconnect...").font(.subheadline).foregroundStyle(.white.opacity(0.5))
                 } else {
                     Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.system(size: 36)).foregroundStyle(DT.Colors.suspicion)
-                    Text("Interrogation Failed").font(DT.Typo.cardTitle).foregroundStyle(DT.Colors.fog)
-                    Text(message).font(DT.Typo.footnote).foregroundStyle(DT.Colors.steel)
-                        .multilineTextAlignment(.center).padding(.horizontal, 24)
+                        .font(.system(size: 36)).foregroundStyle(.yellow)
+                    Text("Interrogation Failed").font(.headline).foregroundStyle(.white)
+                    Text(message).font(.footnote).foregroundStyle(.white.opacity(0.5))
+                        .multilineTextAlignment(.center).lineLimit(5)
+                        .padding(.horizontal, 32)
                 }
-                HStack(spacing: DT.Space.lg) {
+                HStack(spacing: 16) {
                     Button("Reconnect") {
                         Task {
                             await session.connect(avatar: suspect.avatarConfig, personality: suspect.personality,
                                                   startScript: suspect.startScript, tools: GameTools.interrogationTools)
                         }
-                    }.buttonStyle(.borderedProminent).tint(DT.Colors.warmGlow)
+                    }.buttonStyle(.borderedProminent).tint(.orange)
                     Button("End & Keep Evidence") { gameState.endInterrogation() }
-                        .buttonStyle(.bordered).tint(DT.Colors.fog)
+                        .buttonStyle(.bordered).tint(.white)
                 }
             }
+            .padding(32)
         }
     }
 
@@ -443,23 +441,24 @@ struct InterrogationView: View {
                 .onTapGesture { showEndConfirm = false }
             VStack(spacing: 16) {
                 Text("End Interrogation?")
-                    .font(DT.Typo.screenTitle)
-                    .foregroundStyle(DT.Colors.fog)
+                    .font(.system(size: 20, weight: .bold, design: .serif))
+                    .foregroundStyle(.white)
                 Text("You've found \(gameState.discoveredClues.count) clue(s) so far.")
-                    .font(DT.Typo.caption)
-                    .foregroundStyle(DT.Colors.steel)
+                    .font(.subheadline)
+                    .foregroundStyle(.white.opacity(0.6))
                 HStack(spacing: 16) {
                     Button("Continue") { showEndConfirm = false }
-                        .buttonStyle(.bordered).tint(DT.Colors.fog)
+                        .buttonStyle(.bordered).tint(.white)
                     Button("End & Review") {
                         showEndConfirm = false
                         Task { await session.disconnect() }
-                    }.buttonStyle(.borderedProminent).tint(DT.Colors.ember)
+                    }.buttonStyle(.borderedProminent).tint(.red)
                 }
             }
-            .padding(24)
+            .padding(28)
             .background(Color.black.opacity(0.9), in: RoundedRectangle(cornerRadius: 20))
             .overlay(RoundedRectangle(cornerRadius: 20).stroke(.white.opacity(0.1), lineWidth: 0.5))
+            .padding(.horizontal, 24)
         }
     }
 
@@ -471,18 +470,18 @@ struct InterrogationView: View {
             showCard(NotificationCard(
                 label: clue.importance == "critical" ? "KEY EVIDENCE" : "CLUE FOUND",
                 text: clue.text,
-                accentColor: clue.importance == "critical" ? DT.Colors.ember : DT.Colors.warmGlow
+                accentColor: clue.importance == "critical" ? .red : .orange
             ))
         }
         if event.contradictionDetected != nil {
             UINotificationFeedbackGenerator().notificationOccurred(.warning)
-            showCard(NotificationCard(label: "CONTRADICTION", text: "You caught an inconsistency!", accentColor: DT.Colors.ember))
+            showCard(NotificationCard(label: "CONTRADICTION", text: "You caught an inconsistency!", accentColor: .red))
         }
         if let suggestion = event.suggestedQuestion, activeCard == nil {
             Task {
                 try? await Task.sleep(for: .seconds(2))
                 if activeCard == nil {
-                    showCard(NotificationCard(label: "TRY ASKING", text: suggestion, accentColor: DT.Colors.suggestion), duration: 12)
+                    showCard(NotificationCard(label: "TRY ASKING", text: suggestion, accentColor: .blue), duration: 12)
                 }
             }
         }
@@ -490,7 +489,7 @@ struct InterrogationView: View {
             Task {
                 try? await Task.sleep(for: .seconds(1))
                 if activeCard == nil {
-                    showCard(NotificationCard(label: "DETECTIVE INSTINCT", text: instinct, accentColor: DT.Colors.instinct), duration: 8)
+                    showCard(NotificationCard(label: "DETECTIVE INSTINCT", text: instinct, accentColor: .purple), duration: 8)
                 }
             }
         }
@@ -509,12 +508,12 @@ struct InterrogationView: View {
                 showCard(NotificationCard(
                     label: importance == "critical" ? "KEY EVIDENCE" : "CLUE FOUND",
                     text: text,
-                    accentColor: importance == "critical" ? DT.Colors.ember : DT.Colors.warmGlow
+                    accentColor: importance == "critical" ? .red : .orange
                 ))
             }
         case "contradiction":
             UINotificationFeedbackGenerator().notificationOccurred(.warning)
-            showCard(NotificationCard(label: "CONTRADICTION", text: "You caught an inconsistency!", accentColor: DT.Colors.ember))
+            showCard(NotificationCard(label: "CONTRADICTION", text: "You caught an inconsistency!", accentColor: .red))
         case "emotional_shift":
             if let emotion = args["emotion"] as? String {
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -528,7 +527,7 @@ struct InterrogationView: View {
             }
         case "suspicion_shift":
             if let target = args["target_suspect"] as? String {
-                showCard(NotificationCard(label: "ACCUSATION", text: "They're pointing the finger at \(target)", accentColor: DT.Colors.suspicion))
+                showCard(NotificationCard(label: "ACCUSATION", text: "They're pointing the finger at \(target)", accentColor: .yellow))
             }
         default: break
         }
@@ -536,20 +535,20 @@ struct InterrogationView: View {
 
     private func milestoneDisplay(_ milestone: String) -> (String, String, Color) {
         switch milestone {
-        case "first_probe": ("GOOD QUESTION", "You're on the right track", DT.Colors.suggestion)
-        case "key_reveal": ("BREAKTHROUGH", "Key information revealed!", DT.Colors.warmGlow)
-        case "turning_point": ("TURNING POINT", "The interrogation just shifted", DT.Colors.suspicion)
-        case "near_confession": ("PRESSURE", "They're starting to crack...", DT.Colors.ember)
-        case "confession": ("CONFESSION", "They broke!", DT.Colors.success)
-        default: ("PROGRESS", "Milestone reached", DT.Colors.fog)
+        case "first_probe": ("GOOD QUESTION", "You're on the right track", .blue)
+        case "key_reveal": ("BREAKTHROUGH", "Key information revealed!", .orange)
+        case "turning_point": ("TURNING POINT", "The interrogation just shifted", .yellow)
+        case "near_confession": ("PRESSURE", "They're starting to crack...", .red)
+        case "confession": ("CONFESSION", "They broke!", .green)
+        default: ("PROGRESS", "Milestone reached", .white)
         }
     }
 
     private var suspicionColor: Color {
         let level = gameState.gameMaster.suspicionLevel
-        if level > 0.7 { return DT.Colors.ember }
-        if level > 0.4 { return DT.Colors.warmGlow }
-        return DT.Colors.suspicion
+        if level > 0.7 { return .red }
+        if level > 0.4 { return .orange }
+        return .yellow
     }
 }
 
