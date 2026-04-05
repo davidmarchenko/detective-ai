@@ -304,79 +304,85 @@ struct CaseBriefingView: View {
 
 // MARK: - Narrated Text View
 
+/// Always renders text as split sentences. During narration, highlights the active sentence.
+/// Layout never changes between playing and paused states.
 struct NarratedTextView: View {
     let text: String
     @Bindable var narration: NarrationService
 
-    var body: some View {
-        if narration.wordTimings.isEmpty || !narration.isPlaying {
-            // Static text — no narration active
-            Text(text)
-                .font(DT.Typo.bodySerif)
-                .foregroundStyle(DT.Colors.fog.opacity(0.85))
-                .lineSpacing(6)
-        } else {
-            // Sentence-level highlighting — no layout shifts
-            NarrationCaptionView(narration: narration)
-        }
+    private var isNarrating: Bool {
+        !narration.wordTimings.isEmpty && narration.isPlaying
     }
-}
-
-/// Splits text into sentences and highlights the active one.
-/// No bold, no per-word layout changes — just color transitions.
-private struct NarrationCaptionView: View {
-    @Bindable var narration: NarrationService
 
     var body: some View {
-        let sentences = buildSentences()
-        let currentSentenceIndex = findCurrentSentence(sentences)
+        let staticSentences = splitIntoSentences(text)
+        let narrationSentences = isNarrating ? buildNarrationSentences() : []
+        let currentIndex = isNarrating ? findCurrentSentence(narrationSentences) : -1
 
+        // Always use the same sentence layout (from the raw text) to prevent shifts
         VStack(alignment: .leading, spacing: DT.Space.sm) {
-            ForEach(Array(sentences.enumerated()), id: \.offset) { index, sentence in
-                Text(sentence.text)
+            ForEach(Array(staticSentences.enumerated()), id: \.offset) { index, sentence in
+                Text(sentence)
                     .font(DT.Typo.bodySerif)
                     .lineSpacing(6)
-                    .foregroundStyle(colorForSentence(index: index, current: currentSentenceIndex))
-                    .animation(.easeOut(duration: 0.3), value: currentSentenceIndex)
+                    .foregroundStyle(sentenceColor(index: index, current: currentIndex, total: staticSentences.count, narrating: isNarrating))
+                    .animation(.easeOut(duration: 0.3), value: currentIndex)
             }
         }
     }
 
-    private struct Sentence {
-        let text: String
+    /// Split raw text into sentences by punctuation
+    private func splitIntoSentences(_ text: String) -> [String] {
+        var sentences: [String] = []
+        var current = ""
+        for char in text {
+            current.append(char)
+            if ".!?:".contains(char) {
+                let trimmed = current.trimmingCharacters(in: .whitespaces)
+                if !trimmed.isEmpty { sentences.append(trimmed) }
+                current = ""
+            }
+        }
+        let trimmed = current.trimmingCharacters(in: .whitespaces)
+        if !trimmed.isEmpty { sentences.append(trimmed) }
+        return sentences
+    }
+
+    private func sentenceColor(index: Int, current: Int, total: Int, narrating: Bool) -> Color {
+        if !narrating {
+            return DT.Colors.fog.opacity(0.85)  // uniform when not playing
+        }
+        if index == current { return DT.Colors.fog }         // active
+        if index < current { return DT.Colors.steel }         // past
+        return DT.Colors.smoke                                // future
+    }
+
+    // MARK: - Narration sentence mapping
+
+    private struct NarrationSentence {
         let startWordIndex: Int
         let endWordIndex: Int
     }
 
-    private func buildSentences() -> [Sentence] {
+    private func buildNarrationSentences() -> [NarrationSentence] {
         let words = narration.wordTimings
         guard !words.isEmpty else { return [] }
 
-        var sentences: [Sentence] = []
-        var currentText = ""
+        var sentences: [NarrationSentence] = []
         var startIndex = 0
 
         for (i, timing) in words.enumerated() {
-            if !currentText.isEmpty { currentText += " " }
-            currentText += timing.word
-
             let isEnd = timing.word.hasSuffix(".") || timing.word.hasSuffix("!") || timing.word.hasSuffix("?") || timing.word.hasSuffix(":") || i == words.count - 1
             if isEnd {
-                sentences.append(Sentence(text: currentText, startWordIndex: startIndex, endWordIndex: i))
-                currentText = ""
+                sentences.append(NarrationSentence(startWordIndex: startIndex, endWordIndex: i))
                 startIndex = i + 1
             }
-        }
-
-        // Catch any remaining text
-        if !currentText.isEmpty {
-            sentences.append(Sentence(text: currentText, startWordIndex: startIndex, endWordIndex: words.count - 1))
         }
 
         return sentences
     }
 
-    private func findCurrentSentence(_ sentences: [Sentence]) -> Int {
+    private func findCurrentSentence(_ sentences: [NarrationSentence]) -> Int {
         let current = narration.currentWordIndex
         for (i, sentence) in sentences.enumerated() {
             if current >= sentence.startWordIndex && current <= sentence.endWordIndex {
@@ -384,15 +390,5 @@ private struct NarrationCaptionView: View {
             }
         }
         return -1
-    }
-
-    private func colorForSentence(index: Int, current: Int) -> Color {
-        if index == current {
-            return DT.Colors.fog           // active: bright
-        } else if index < current {
-            return DT.Colors.steel         // past: medium
-        } else {
-            return DT.Colors.smoke         // future: dim
-        }
     }
 }

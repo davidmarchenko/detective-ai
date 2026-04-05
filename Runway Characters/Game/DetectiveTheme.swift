@@ -7,18 +7,18 @@ enum DT {
     // MARK: - Colors
 
     enum Colors {
-        // Backgrounds — layered depth, not flat black
-        static let void           = Color(red: 0.04, green: 0.03, blue: 0.06)
-        static let surface        = Color(red: 0.08, green: 0.07, blue: 0.10)
-        static let surfaceRaised  = Color(red: 0.12, green: 0.10, blue: 0.14)
+        // Backgrounds — deeper, richer darks
+        static let void           = Color(red: 0.03, green: 0.02, blue: 0.05)
+        static let surface        = Color(red: 0.07, green: 0.06, blue: 0.09)
+        static let surfaceRaised  = Color(red: 0.11, green: 0.09, blue: 0.13)
 
-        // Text hierarchy — warm-toned, not pure white
-        static let fog            = Color(red: 0.85, green: 0.86, blue: 0.88)
-        static let steel          = Color(red: 0.55, green: 0.58, blue: 0.65)
-        static let smoke          = Color(red: 0.38, green: 0.40, blue: 0.45)
+        // Text hierarchy — warm-toned, high contrast
+        static let fog            = Color(red: 0.92, green: 0.91, blue: 0.90)
+        static let steel          = Color(red: 0.52, green: 0.54, blue: 0.60)
+        static let smoke          = Color(red: 0.32, green: 0.34, blue: 0.38)
 
-        // Semantic accents
-        static let warmGlow       = Color(red: 0.95, green: 0.65, blue: 0.25)   // amber lamplight
+        // Semantic accents — punchy, vivid
+        static let warmGlow       = Color(red: 1.0, green: 0.68, blue: 0.20)   // amber lamplight
         static let ember          = Color(red: 0.85, green: 0.25, blue: 0.25)   // danger/accusation
         static let instinct       = Color(red: 0.55, green: 0.35, blue: 0.75)   // detective intuition
         static let suggestion     = Color(red: 0.35, green: 0.55, blue: 0.80)   // guidance
@@ -116,16 +116,19 @@ struct NoirBackground: ViewModifier {
                 ZStack {
                     DT.Grad.screen.ignoresSafeArea()
 
-                    // Film grain — subtle static texture
+                    // Film grain — visible texture
                     Canvas { context, size in
-                        for i in 0..<300 {
+                        for i in 0..<800 {
                             let x = CGFloat((i * 7919 + 104729) % Int(size.width))
                             let y = CGFloat((i * 6271 + 73856) % Int(size.height))
-                            let rect = CGRect(x: x, y: y, width: 1.5, height: 1.5)
-                            context.fill(Path(ellipseIn: rect), with: .color(.white.opacity(0.025)))
+                            let s = CGFloat((i * 3571) % 3 + 1)
+                            let opacity = Double((i * 2377) % 40 + 15) / 1000.0 // 0.015–0.055
+                            let rect = CGRect(x: x, y: y, width: s, height: s)
+                            context.fill(Path(ellipseIn: rect), with: .color(.white.opacity(opacity)))
                         }
                     }
                     .ignoresSafeArea()
+                    .blendMode(.screen)
 
                     // Ambient glow
                     if ambient != .clear {
@@ -167,15 +170,24 @@ struct EvidenceCardStyle: ViewModifier {
             ZStack {
                 RoundedRectangle(cornerRadius: DT.Radius.md)
                     .fill(DT.Colors.surface)
+                // Ruled line texture
+                VStack(spacing: 18) {
+                    ForEach(0..<6, id: \.self) { _ in
+                        Rectangle().fill(Color.white.opacity(0.012)).frame(height: 0.5)
+                    }
+                }
+                .padding(.vertical, DT.Space.sm)
+                .clipShape(RoundedRectangle(cornerRadius: DT.Radius.md))
+                // Top light sheen
                 RoundedRectangle(cornerRadius: DT.Radius.md)
                     .fill(DT.Grad.cardSheen)
             }
         }
         .overlay(
             RoundedRectangle(cornerRadius: DT.Radius.md)
-                .stroke(Color.white.opacity(0.05), lineWidth: 0.5)
+                .stroke(Color.white.opacity(0.06), lineWidth: 0.5)
         )
-        .shadow(color: .black.opacity(0.4), radius: 8, y: 4)
+        .shadow(color: .black.opacity(0.5), radius: 10, y: 5)
     }
 }
 
@@ -196,16 +208,27 @@ struct SuspectCardStyle: ViewModifier {
             .background {
                 ZStack {
                     RoundedRectangle(cornerRadius: DT.Radius.lg)
-                        .fill(DT.Colors.surface)
-                    RoundedRectangle(cornerRadius: DT.Radius.lg)
-                        .fill(DT.Grad.cardSheen)
+                        .fill(
+                            LinearGradient(
+                                colors: [DT.Colors.surfaceRaised, DT.Colors.surface],
+                                startPoint: .top, endPoint: .bottom
+                            )
+                        )
+                    // Top highlight edge
+                    VStack {
+                        RoundedRectangle(cornerRadius: DT.Radius.lg)
+                            .fill(Color.white.opacity(0.04))
+                            .frame(height: 1)
+                        Spacer()
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
                 }
             }
             .overlay(
                 RoundedRectangle(cornerRadius: DT.Radius.lg)
-                    .stroke(statusColor.opacity(0.15), lineWidth: 1)
+                    .stroke(statusColor.opacity(0.12), lineWidth: 1)
             )
-            .shadow(color: .black.opacity(0.5), radius: 12, y: 6)
+            .shadow(color: .black.opacity(0.6), radius: 14, y: 8)
     }
 }
 
