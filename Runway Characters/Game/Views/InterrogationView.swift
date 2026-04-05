@@ -138,27 +138,29 @@ struct InterrogationView: View {
     // MARK: - Game Top Bar (Stylized HUD)
 
     private var gameTopBar: some View {
-        ZStack {
-            // Angular background strip
-            Path { p in
-                p.move(to: CGPoint(x: 0, y: 0))
-                p.addLine(to: CGPoint(x: UIScreen.main.bounds.width, y: 0))
-                p.addLine(to: CGPoint(x: UIScreen.main.bounds.width, y: 58))
-                p.addLine(to: CGPoint(x: UIScreen.main.bounds.width * 0.7, y: 58))
-                p.addLine(to: CGPoint(x: UIScreen.main.bounds.width * 0.65, y: 48))
-                p.addLine(to: CGPoint(x: 0, y: 48))
-                p.closeSubpath()
-            }
-            .fill(DT.Colors.void.opacity(0.85))
+        GeometryReader { geo in
+            let w = geo.size.width
+            ZStack {
+                // Angular background strip
+                Path { p in
+                    p.move(to: CGPoint(x: 0, y: 0))
+                    p.addLine(to: CGPoint(x: w, y: 0))
+                    p.addLine(to: CGPoint(x: w, y: 58))
+                    p.addLine(to: CGPoint(x: w * 0.7, y: 58))
+                    p.addLine(to: CGPoint(x: w * 0.65, y: 48))
+                    p.addLine(to: CGPoint(x: 0, y: 48))
+                    p.closeSubpath()
+                }
+                .fill(DT.Colors.void.opacity(0.85))
 
-            // Amber accent line at bottom
-            Path { p in
-                p.move(to: CGPoint(x: 0, y: 48))
-                p.addLine(to: CGPoint(x: UIScreen.main.bounds.width * 0.65, y: 48))
-                p.addLine(to: CGPoint(x: UIScreen.main.bounds.width * 0.7, y: 58))
-                p.addLine(to: CGPoint(x: UIScreen.main.bounds.width, y: 58))
-            }
-            .stroke(DT.Colors.warmGlow.opacity(0.3), lineWidth: 1)
+                // Amber accent line at bottom
+                Path { p in
+                    p.move(to: CGPoint(x: 0, y: 48))
+                    p.addLine(to: CGPoint(x: w * 0.65, y: 48))
+                    p.addLine(to: CGPoint(x: w * 0.7, y: 58))
+                    p.addLine(to: CGPoint(x: w, y: 58))
+                }
+                .stroke(DT.Colors.warmGlow.opacity(0.3), lineWidth: 1)
 
             HStack(alignment: .center) {
                 // Suspect name plate
@@ -216,8 +218,9 @@ struct InterrogationView: View {
                         .foregroundStyle(DT.Colors.fog.opacity(0.7))
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 8)
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+            }
         }
         .frame(height: 58)
     }
@@ -584,7 +587,7 @@ struct InterrogationView: View {
             showCard(NotificationCard(
                 label: clue.importance == "critical" ? "KEY EVIDENCE" : "CLUE FOUND",
                 text: clue.text,
-                accentColor: clue.importance == "critical" ? .red : .orange
+                accentColor: clue.importance == "critical" ? DT.Colors.ember : DT.Colors.warmGlow
             ))
         }
 
@@ -594,7 +597,7 @@ struct InterrogationView: View {
             showCard(NotificationCard(
                 label: "CONTRADICTION",
                 text: "You caught an inconsistency!",
-                accentColor: .red
+                accentColor: DT.Colors.ember
             ))
         }
 
@@ -606,7 +609,7 @@ struct InterrogationView: View {
                     showCard(NotificationCard(
                         label: "TRY ASKING",
                         text: suggestion,
-                        accentColor: .blue
+                        accentColor: DT.Colors.suggestion
                     ), duration: 12)
                 }
             }
@@ -620,7 +623,7 @@ struct InterrogationView: View {
                     showCard(NotificationCard(
                         label: "DETECTIVE INSTINCT",
                         text: instinct,
-                        accentColor: .purple
+                        accentColor: DT.Colors.instinct
                     ), duration: 8)
                 }
             }
@@ -652,7 +655,7 @@ struct InterrogationView: View {
             showCard(NotificationCard(
                 label: "CONTRADICTION",
                 text: "You caught an inconsistency in their story!",
-                accentColor: .red
+                accentColor: DT.Colors.ember
             ))
 
         case "emotional_shift":
@@ -673,7 +676,7 @@ struct InterrogationView: View {
                 showCard(NotificationCard(
                     label: "ACCUSATION",
                     text: "They're pointing the finger at \(target)",
-                    accentColor: .yellow
+                    accentColor: DT.Colors.suspicion
                 ))
             }
 
@@ -684,20 +687,20 @@ struct InterrogationView: View {
 
     private func milestoneDisplay(_ milestone: String) -> (String, String, Color) {
         switch milestone {
-        case "first_probe": ("GOOD QUESTION", "You're on the right track", .blue)
-        case "key_reveal": ("BREAKTHROUGH", "Key information revealed!", .orange)
-        case "turning_point": ("TURNING POINT", "The interrogation just shifted", .yellow)
-        case "near_confession": ("PRESSURE", "They're starting to crack...", .red)
-        case "confession": ("CONFESSION", "They broke!", .green)
-        default: ("PROGRESS", "Milestone reached", .white)
+        case "first_probe": ("GOOD QUESTION", "You're on the right track", DT.Colors.suggestion)
+        case "key_reveal": ("BREAKTHROUGH", "Key information revealed!", DT.Colors.warmGlow)
+        case "turning_point": ("TURNING POINT", "The interrogation just shifted", DT.Colors.suspicion)
+        case "near_confession": ("PRESSURE", "They're starting to crack...", DT.Colors.ember)
+        case "confession": ("CONFESSION", "They broke!", DT.Colors.success)
+        default: ("PROGRESS", "Milestone reached", DT.Colors.fog)
         }
     }
 
     private var suspicionColor: Color {
         let level = gameState.gameMaster.suspicionLevel
-        if level > 0.7 { return .red }
-        if level > 0.4 { return .orange }
-        return .yellow
+        if level > 0.7 { return DT.Colors.ember }
+        if level > 0.4 { return DT.Colors.warmGlow }
+        return DT.Colors.suspicion
     }
 
     private func emotionEmoji(_ emotion: String) -> String {

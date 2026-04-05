@@ -60,10 +60,10 @@ struct InvestigationDrawerView: View {
                 Text(label)
                     .font(.system(size: 11, weight: .medium))
             }
-            .foregroundStyle(selectedTab == tag ? .orange : .white.opacity(0.5))
+            .foregroundStyle(selectedTab == tag ? .orange : DT.Colors.fog.opacity(0.5))
             .frame(maxWidth: .infinity)
             .padding(.vertical, 8)
-            .background(selectedTab == tag ? .orange.opacity(0.1) : .clear, in: RoundedRectangle(cornerRadius: 8))
+            .background(selectedTab == tag ? DT.Colors.warmGlow.opacity(0.1) : .clear, in: RoundedRectangle(cornerRadius: 8))
         }
     }
 
@@ -76,24 +76,24 @@ struct InvestigationDrawerView: View {
                 HStack(spacing: 12) {
                     Image(systemName: line.icon)
                         .font(.system(size: 18))
-                        .foregroundStyle(progress > 0 ? .orange : .white.opacity(0.3))
+                        .foregroundStyle(progress > 0 ? .orange : DT.Colors.fog.opacity(0.3))
                         .frame(width: 28)
 
                     VStack(alignment: .leading, spacing: 4) {
                         Text(line.label)
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(DT.Colors.fog)
                         Text(line.description)
                             .font(.system(size: 11))
-                            .foregroundStyle(.white.opacity(0.5))
+                            .foregroundStyle(DT.Colors.fog.opacity(0.5))
 
                         // Progress bar
                         GeometryReader { geo in
                             ZStack(alignment: .leading) {
                                 RoundedRectangle(cornerRadius: 2)
-                                    .fill(.white.opacity(0.1))
+                                    .fill(DT.Colors.fog.opacity(0.1))
                                 RoundedRectangle(cornerRadius: 2)
-                                    .fill(progress >= line.maxDepth ? .green : .orange)
+                                    .fill(progress >= line.maxDepth ? DT.Colors.success : DT.Colors.warmGlow)
                                     .frame(width: geo.size.width * CGFloat(min(progress, line.maxDepth)) / CGFloat(line.maxDepth))
                                     .animation(.easeOut(duration: 0.3), value: progress)
                             }
@@ -103,10 +103,10 @@ struct InvestigationDrawerView: View {
 
                     Text("\(min(progress, line.maxDepth))/\(line.maxDepth)")
                         .font(.system(size: 12, weight: .bold).monospacedDigit())
-                        .foregroundStyle(progress >= line.maxDepth ? .green : .orange)
+                        .foregroundStyle(progress >= line.maxDepth ? DT.Colors.success : DT.Colors.warmGlow)
                 }
                 .padding(10)
-                .background(.white.opacity(0.03), in: RoundedRectangle(cornerRadius: 10))
+                .background(DT.Colors.fog.opacity(0.03), in: RoundedRectangle(cornerRadius: 10))
             }
         }
     }
@@ -122,7 +122,7 @@ struct InvestigationDrawerView: View {
             if available.isEmpty && locked.isEmpty {
                 Text("No suggested questions for this suspect")
                     .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.4))
+                    .foregroundStyle(DT.Colors.fog.opacity(0.4))
                     .padding(.top, 20)
             }
 
@@ -135,23 +135,23 @@ struct InvestigationDrawerView: View {
                     HStack(alignment: .top, spacing: 10) {
                         Image(systemName: used ? "checkmark.circle.fill" : "quote.opening")
                             .font(.system(size: 14))
-                            .foregroundStyle(used ? .green : .orange)
+                            .foregroundStyle(used ? DT.Colors.success : DT.Colors.warmGlow)
                             .frame(width: 20)
                             .padding(.top, 2)
                         VStack(alignment: .leading, spacing: 4) {
                             Text(question.text)
                                 .font(.system(size: 14))
-                                .foregroundStyle(used ? .white.opacity(0.4) : .white)
+                                .foregroundStyle(used ? DT.Colors.fog.opacity(0.4) : .white)
                                 .multilineTextAlignment(.leading)
                             lineLabel(question.lineId)
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(10)
-                    .background(used ? .white.opacity(0.02) : .orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+                    .background(used ? DT.Colors.fog.opacity(0.02) : DT.Colors.warmGlow.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
                     .overlay(
                         RoundedRectangle(cornerRadius: 10)
-                            .stroke(used ? .clear : .orange.opacity(0.2), lineWidth: 1)
+                            .stroke(used ? .clear : DT.Colors.warmGlow.opacity(0.2), lineWidth: 1)
                     )
                 }
                 .buttonStyle(.plain)
@@ -162,19 +162,19 @@ struct InvestigationDrawerView: View {
                 HStack(alignment: .top, spacing: 10) {
                     Image(systemName: "lock.fill")
                         .font(.system(size: 12))
-                        .foregroundStyle(.white.opacity(0.2))
+                        .foregroundStyle(DT.Colors.fog.opacity(0.2))
                         .frame(width: 20)
                         .padding(.top, 2)
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Discover more clues to unlock")
                             .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(.white.opacity(0.25))
+                            .foregroundStyle(DT.Colors.fog.opacity(0.25))
                         lineLabel(question.lineId)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(10)
-                .background(.white.opacity(0.02), in: RoundedRectangle(cornerRadius: 10))
+                .background(DT.Colors.fog.opacity(0.02), in: RoundedRectangle(cornerRadius: 10))
             }
         }
     }
@@ -189,7 +189,7 @@ struct InvestigationDrawerView: View {
                     .font(.system(size: 10, weight: .medium))
             }
         }
-        .foregroundStyle(.white.opacity(0.3))
+        .foregroundStyle(DT.Colors.fog.opacity(0.3))
     }
 
     // MARK: - Actions Tab
@@ -213,21 +213,21 @@ struct InvestigationDrawerView: View {
                     VStack(spacing: 6) {
                         Image(systemName: action.icon)
                             .font(.system(size: 20))
-                            .foregroundStyle(available ? .orange : .white.opacity(0.2))
+                            .foregroundStyle(available ? .orange : DT.Colors.fog.opacity(0.2))
                         Text(action.label)
                             .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(available ? .white : .white.opacity(0.2))
+                            .foregroundStyle(available ? .white : DT.Colors.fog.opacity(0.2))
                             .multilineTextAlignment(.center)
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
                     .background(
-                        isSelected ? .orange.opacity(0.15) : .white.opacity(0.03),
+                        isSelected ? DT.Colors.warmGlow.opacity(0.15) : DT.Colors.fog.opacity(0.03),
                         in: RoundedRectangle(cornerRadius: 12)
                     )
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(isSelected ? .orange.opacity(0.5) : .clear, lineWidth: 1)
+                            .stroke(isSelected ? DT.Colors.warmGlow.opacity(0.5) : .clear, lineWidth: 1)
                     )
                 }
                 .buttonStyle(.plain)
@@ -240,7 +240,7 @@ struct InvestigationDrawerView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("SAY THIS:")
                         .font(.system(size: 10, weight: .bold, design: .monospaced))
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(DT.Colors.warmGlow)
                         .tracking(2)
 
                     if action.id == "present_evidence" {
@@ -248,23 +248,23 @@ struct InvestigationDrawerView: View {
                         if let selected = selectedClueForPresent {
                             Text("\"I have evidence that \(selected.text). How do you explain that?\"")
                                 .font(.system(size: 14, design: .serif))
-                                .foregroundStyle(.white)
+                                .foregroundStyle(DT.Colors.fog)
                                 .italic()
                         } else {
                             Text("Pick a clue to present:")
                                 .font(.system(size: 12))
-                                .foregroundStyle(.white.opacity(0.6))
+                                .foregroundStyle(DT.Colors.fog.opacity(0.6))
                             ForEach(gameState.discoveredClues) { clue in
                                 Button {
                                     selectedClueForPresent = clue
                                 } label: {
                                     Text(clue.text)
                                         .font(.system(size: 12))
-                                        .foregroundStyle(.orange)
+                                        .foregroundStyle(DT.Colors.warmGlow)
                                         .lineLimit(2)
                                         .frame(maxWidth: .infinity, alignment: .leading)
                                         .padding(8)
-                                        .background(.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 6))
+                                        .background(DT.Colors.warmGlow.opacity(0.1), in: RoundedRectangle(cornerRadius: 6))
                                 }
                                 .buttonStyle(.plain)
                             }
@@ -273,18 +273,18 @@ struct InvestigationDrawerView: View {
                         let c = gameState.contradictions.last!
                         Text("\"You said '\(c.original)', but now you're saying '\(c.corrected)'. Which is it?\"")
                             .font(.system(size: 14, design: .serif))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(DT.Colors.fog)
                             .italic()
                     } else {
                         Text(action.promptHint)
                             .font(.system(size: 14, design: .serif))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(DT.Colors.fog)
                             .italic()
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(12)
-                .background(.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+                .background(DT.Colors.warmGlow.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
                 .gridCellColumns(2)
             }
         }
