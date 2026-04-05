@@ -310,44 +310,89 @@ struct NarratedTextView: View {
 
     var body: some View {
         if narration.wordTimings.isEmpty || !narration.isPlaying {
+            // Static text — no narration active
             Text(text)
                 .font(DT.Typo.bodySerif)
                 .foregroundStyle(DT.Colors.fog.opacity(0.85))
-                .lineSpacing(4)
+                .lineSpacing(6)
         } else {
-            WrappingHStack(narration: narration)
+            // Sentence-level highlighting — no layout shifts
+            NarrationCaptionView(narration: narration)
         }
     }
 }
 
-private struct WrappingHStack: View {
+/// Splits text into sentences and highlights the active one.
+/// No bold, no per-word layout changes — just color transitions.
+private struct NarrationCaptionView: View {
     @Bindable var narration: NarrationService
 
     var body: some View {
-        let words = narration.wordTimings
-        let currentIndex = narration.currentWordIndex
+        let sentences = buildSentences()
+        let currentSentenceIndex = findCurrentSentence(sentences)
 
-        VStack(alignment: .leading, spacing: 4) {
-            words.enumerated().reduce(Text("")) { result, item in
-                let (i, timing) = item
-                let separator = i > 0 ? Text(" ") : Text("")
-                let wordView: Text
-                if i == currentIndex {
-                    wordView = Text(timing.word)
-                        .foregroundColor(DT.Colors.warmGlow)
-                        .fontWeight(.semibold)
-                } else if i < currentIndex {
-                    wordView = Text(timing.word)
-                        .foregroundColor(DT.Colors.fog)
-                } else {
-                    wordView = Text(timing.word)
-                        .foregroundColor(DT.Colors.smoke)
-                }
-                return result + separator + wordView
+        VStack(alignment: .leading, spacing: DT.Space.sm) {
+            ForEach(Array(sentences.enumerated()), id: \.offset) { index, sentence in
+                Text(sentence.text)
+                    .font(DT.Typo.bodySerif)
+                    .lineSpacing(6)
+                    .foregroundStyle(colorForSentence(index: index, current: currentSentenceIndex))
+                    .animation(.easeOut(duration: 0.3), value: currentSentenceIndex)
             }
-            .font(DT.Typo.bodySerif)
-            .lineSpacing(4)
-            .animation(.easeOut(duration: 0.1), value: currentIndex)
+        }
+    }
+
+    private struct Sentence {
+        let text: String
+        let startWordIndex: Int
+        let endWordIndex: Int
+    }
+
+    private func buildSentences() -> [Sentence] {
+        let words = narration.wordTimings
+        guard !words.isEmpty else { return [] }
+
+        var sentences: [Sentence] = []
+        var currentText = ""
+        var startIndex = 0
+
+        for (i, timing) in words.enumerated() {
+            if !currentText.isEmpty { currentText += " " }
+            currentText += timing.word
+
+            let isEnd = timing.word.hasSuffix(".") || timing.word.hasSuffix("!") || timing.word.hasSuffix("?") || timing.word.hasSuffix(":") || i == words.count - 1
+            if isEnd {
+                sentences.append(Sentence(text: currentText, startWordIndex: startIndex, endWordIndex: i))
+                currentText = ""
+                startIndex = i + 1
+            }
+        }
+
+        // Catch any remaining text
+        if !currentText.isEmpty {
+            sentences.append(Sentence(text: currentText, startWordIndex: startIndex, endWordIndex: words.count - 1))
+        }
+
+        return sentences
+    }
+
+    private func findCurrentSentence(_ sentences: [Sentence]) -> Int {
+        let current = narration.currentWordIndex
+        for (i, sentence) in sentences.enumerated() {
+            if current >= sentence.startWordIndex && current <= sentence.endWordIndex {
+                return i
+            }
+        }
+        return -1
+    }
+
+    private func colorForSentence(index: Int, current: Int) -> Color {
+        if index == current {
+            return DT.Colors.fog           // active: bright
+        } else if index < current {
+            return DT.Colors.steel         // past: medium
+        } else {
+            return DT.Colors.smoke         // future: dim
         }
     }
 }
