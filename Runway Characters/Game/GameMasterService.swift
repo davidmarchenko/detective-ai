@@ -48,14 +48,17 @@ final class GameMasterService {
         // Only analyze after suspect speaks (not user)
         guard role == "assistant" || role == "suspect" else { return }
 
+        // Don't queue if already analyzing — let the current request finish
+        guard !isAnalyzing else { return }
+
         // Throttle: don't analyze too frequently
         let timeSinceLastAnalysis = Date().timeIntervalSince(lastAnalysisTime)
         guard timeSinceLastAnalysis >= minAnalysisInterval else { return }
 
-        // Cancel any pending analysis and start a new one
+        // Schedule analysis after a short delay to batch rapid transcript segments
+        // Don't cancel in-flight requests — only cancel the sleep delay
         analysisTask?.cancel()
         analysisTask = Task {
-            // Small delay to batch rapid transcript segments
             try? await Task.sleep(for: .seconds(1.5))
             guard !Task.isCancelled else { return }
             await analyze()
