@@ -20,13 +20,16 @@ struct InterrogationView: View {
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            DT.Colors.void.ignoresSafeArea()
 
             // Avatar video
             if let videoTrack = session.remoteVideoTrack {
                 SwiftUIVideoView(videoTrack)
                     .ignoresSafeArea()
             }
+
+            // HUD frame overlay — corner brackets + scan lines
+            hudFrame
 
             // Game HUD overlay
             VStack(spacing: 0) {
@@ -134,6 +137,73 @@ struct InterrogationView: View {
         }
     }
 
+
+    // MARK: - HUD Frame (Corner Brackets + Surveillance Aesthetic)
+
+    private var hudFrame: some View {
+        GeometryReader { geo in
+            let w = geo.size.width
+            let h = geo.size.height
+            let bracketSize: CGFloat = 30
+            let inset: CGFloat = 12
+            let lineWidth: CGFloat = 1.5
+
+            ZStack {
+                // Corner brackets
+                Group {
+                    // Top-left
+                    Path { p in
+                        p.move(to: CGPoint(x: inset, y: inset + bracketSize))
+                        p.addLine(to: CGPoint(x: inset, y: inset))
+                        p.addLine(to: CGPoint(x: inset + bracketSize, y: inset))
+                    }
+                    // Top-right
+                    Path { p in
+                        p.move(to: CGPoint(x: w - inset - bracketSize, y: inset))
+                        p.addLine(to: CGPoint(x: w - inset, y: inset))
+                        p.addLine(to: CGPoint(x: w - inset, y: inset + bracketSize))
+                    }
+                    // Bottom-left
+                    Path { p in
+                        p.move(to: CGPoint(x: inset, y: h - inset - bracketSize))
+                        p.addLine(to: CGPoint(x: inset, y: h - inset))
+                        p.addLine(to: CGPoint(x: inset + bracketSize, y: h - inset))
+                    }
+                    // Bottom-right
+                    Path { p in
+                        p.move(to: CGPoint(x: w - inset - bracketSize, y: h - inset))
+                        p.addLine(to: CGPoint(x: w - inset, y: h - inset))
+                        p.addLine(to: CGPoint(x: w - inset, y: h - inset - bracketSize))
+                    }
+                }
+                .stroke(DT.Colors.warmGlow.opacity(0.25), lineWidth: lineWidth)
+
+                // "REC" indicator top-right
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(DT.Colors.ember)
+                        .frame(width: 6, height: 6)
+                        .shadow(color: DT.Colors.ember, radius: 3)
+                    Text("REC")
+                        .font(.system(size: 8, weight: .bold, design: .monospaced))
+                        .foregroundStyle(DT.Colors.ember.opacity(0.7))
+                }
+                .position(x: w - 40, y: 75)
+
+                // Subtle scan line
+                Rectangle()
+                    .fill(DT.Colors.warmGlow.opacity(0.03))
+                    .frame(height: 1)
+                    .position(x: w / 2, y: h * 0.33)
+                Rectangle()
+                    .fill(DT.Colors.warmGlow.opacity(0.03))
+                    .frame(height: 1)
+                    .position(x: w / 2, y: h * 0.66)
+            }
+        }
+        .ignoresSafeArea()
+        .allowsHitTesting(false)
+    }
 
     // MARK: - Game Top Bar (Stylized HUD)
 
@@ -268,69 +338,87 @@ struct InterrogationView: View {
         }
     }
 
-    // MARK: - Controls (Stylized Angular Bar)
+    // MARK: - Controls (Opaque HUD Bar)
 
     private var gameControls: some View {
-        HStack(spacing: DT.Space.md) {
-            hudButton(icon: isMuted ? "mic.slash.fill" : "mic.fill", label: "MIC", active: !isMuted, color: DT.Colors.suggestion) {
-                isMuted.toggle()
-                Task { try? await session._room?.localParticipant.setMicrophone(enabled: !isMuted) }
-            }
-            hudButton(icon: "text.quote", label: "LOG", active: showTranscription, color: DT.Colors.steel) {
-                withAnimation { showTranscription.toggle() }
-            }
-            ZStack(alignment: .topTrailing) {
-                hudButton(icon: "magnifyingglass", label: "CLUES", active: showInvestigate, color: DT.Colors.warmGlow) {
-                    withAnimation { showInvestigate.toggle() }
-                    gameState.newQuestionsAvailable = false
-                }
-                // Pulse dot when new questions available
-                if gameState.newQuestionsAvailable && !showInvestigate {
-                    Circle()
-                        .fill(DT.Colors.warmGlow)
-                        .frame(width: 8, height: 8)
-                        .shadow(color: DT.Colors.warmGlow, radius: 4)
-                        .offset(x: 4, y: -4)
-                }
-            }
+        VStack(spacing: 0) {
+            // Amber accent line
+            Rectangle()
+                .fill(DT.Colors.warmGlow.opacity(0.2))
+                .frame(height: 0.5)
 
-            Spacer()
-
-            // End interrogation — angular red button
-            Button { showEndConfirm = true } label: {
-                HStack(spacing: 4) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 12, weight: .black))
-                    Text("END")
-                        .font(.system(size: 10, weight: .black, design: .monospaced))
-                        .tracking(2)
+            HStack(spacing: 0) {
+                hudButton(icon: isMuted ? "mic.slash.fill" : "mic.fill", label: "MIC", active: !isMuted, color: DT.Colors.suggestion) {
+                    isMuted.toggle()
+                    Task { try? await session._room?.localParticipant.setMicrophone(enabled: !isMuted) }
                 }
-                .foregroundStyle(DT.Colors.fog)
-                .padding(.horizontal, DT.Space.lg)
-                .padding(.vertical, DT.Space.md)
-                .background(DT.Colors.ember, in: UnevenRoundedRectangle(topLeadingRadius: DT.Radius.sm, bottomLeadingRadius: DT.Radius.md, bottomTrailingRadius: DT.Radius.sm, topTrailingRadius: DT.Radius.md))
-                .shadow(color: DT.Colors.ember.opacity(0.4), radius: 6)
+
+                hudDivider
+
+                hudButton(icon: "text.quote", label: "LOG", active: showTranscription, color: DT.Colors.fog) {
+                    withAnimation { showTranscription.toggle() }
+                }
+
+                hudDivider
+
+                ZStack(alignment: .topTrailing) {
+                    hudButton(icon: "magnifyingglass", label: "CLUES", active: showInvestigate, color: DT.Colors.warmGlow) {
+                        withAnimation { showInvestigate.toggle() }
+                        gameState.newQuestionsAvailable = false
+                    }
+                    if gameState.newQuestionsAvailable && !showInvestigate {
+                        Circle()
+                            .fill(DT.Colors.warmGlow)
+                            .frame(width: 8, height: 8)
+                            .shadow(color: DT.Colors.warmGlow, radius: 4)
+                            .offset(x: -6, y: 6)
+                    }
+                }
+
+                hudDivider
+
+                // End button — red, prominent
+                Button { showEndConfirm = true } label: {
+                    VStack(spacing: 3) {
+                        Image(systemName: "phone.down.fill")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundStyle(DT.Colors.fog)
+                        Text("END")
+                            .font(.system(size: 8, weight: .black, design: .monospaced))
+                            .foregroundStyle(DT.Colors.fog.opacity(0.7))
+                            .tracking(1)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, DT.Space.md)
+                    .background(DT.Colors.ember.opacity(0.9))
+                }
             }
+            .frame(height: 60)
+            .background(DT.Colors.void.opacity(0.95))
         }
-        .padding(.horizontal, 20)
-        .padding(.bottom, 20)
-        .background(
-            DT.Grad.bottomFade.ignoresSafeArea()
-        )
+    }
+
+    private var hudDivider: some View {
+        Rectangle()
+            .fill(DT.Colors.warmGlow.opacity(0.1))
+            .frame(width: 0.5)
+            .padding(.vertical, 8)
     }
 
     private func hudButton(icon: String, label: String, active: Bool, color: Color, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             VStack(spacing: 3) {
                 Image(systemName: icon)
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(active ? color : DT.Colors.smoke)
                 Text(label)
-                    .font(.system(size: 8, weight: .bold, design: .monospaced))
-                    .foregroundStyle(active ? color.opacity(0.7) : DT.Colors.smoke)
+                    .font(.system(size: 8, weight: .black, design: .monospaced))
+                    .foregroundStyle(active ? color.opacity(0.8) : DT.Colors.smoke)
                     .tracking(1)
             }
-            .frame(width: 50)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, DT.Space.md)
+            .background(active ? color.opacity(0.08) : .clear)
         }
     }
 
@@ -456,10 +544,10 @@ struct InterrogationView: View {
                         }
                     }
                     .buttonStyle(.borderedProminent)
-                    .tint(.orange)
+                    .tint(DT.Colors.warmGlow)
                     Button("End & Keep Evidence") { gameState.endInterrogation() }
                         .buttonStyle(.bordered)
-                        .tint(.white)
+                        .tint(DT.Colors.fog)
                 }
             }
         }
@@ -499,60 +587,55 @@ struct InterrogationView: View {
     // MARK: - Unified Notification Card
 
     private func notificationCard(_ card: NotificationCard) -> some View {
-        HStack(spacing: 10) {
-            // Accent bar with glow
-            RoundedRectangle(cornerRadius: 2)
+        HStack(spacing: 0) {
+            // Solid accent stripe (wide, bold)
+            Rectangle()
                 .fill(card.accentColor)
-                .frame(width: 4, height: 36)
-                .shadow(color: card.accentColor.opacity(0.5), radius: 4)
+                .frame(width: 5)
+                .shadow(color: card.accentColor.opacity(0.6), radius: 6)
 
-            VStack(alignment: .leading, spacing: 2) {
-                if let label = card.label {
-                    Text(label)
-                        .font(DT.Typo.tagLabel)
-                        .foregroundStyle(card.accentColor)
+            HStack(spacing: DT.Space.md) {
+                VStack(alignment: .leading, spacing: 2) {
+                    if let label = card.label {
+                        Text(label)
+                            .font(.system(size: 9, weight: .black, design: .monospaced))
+                            .foregroundStyle(card.accentColor)
+                            .tracking(2)
+                    }
+                    Text(card.text)
+                        .font(DT.Typo.caption)
+                        .foregroundStyle(DT.Colors.fog)
+                        .lineLimit(2)
                 }
-                Text(card.text)
-                    .font(DT.Typo.caption)
-                    .fontWeight(.medium)
-                    .foregroundStyle(DT.Colors.fog)
-                    .lineLimit(2)
-            }
 
-            Spacer()
+                Spacer(minLength: 0)
 
-            Button {
-                withAnimation { activeCard = nil }
-                if let questionId = card.questionId {
-                    gameState.usedQuestionIds.insert(questionId)
+                Button {
+                    withAnimation { activeCard = nil }
+                    if let questionId = card.questionId {
+                        gameState.usedQuestionIds.insert(questionId)
+                    }
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(DT.Colors.smoke)
+                        .padding(8)
                 }
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundStyle(DT.Colors.smoke)
-                    .padding(6)
             }
+            .padding(.horizontal, DT.Space.md)
+            .padding(.vertical, DT.Space.md)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background {
-            ZStack {
-                RoundedRectangle(cornerRadius: DT.Radius.md)
-                    .fill(DT.Colors.surface.opacity(0.95))
-                // Colored tint from left
-                RoundedRectangle(cornerRadius: DT.Radius.md)
-                    .fill(
-                        LinearGradient(
-                            colors: [card.accentColor.opacity(0.08), .clear],
-                            startPoint: .leading, endPoint: .trailing
-                        )
-                    )
-            }
-        }
+        .background(DT.Colors.void.opacity(0.92))
         .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(card.accentColor.opacity(0.25), lineWidth: 1)
+            // Top + bottom accent lines
+            VStack {
+                Rectangle().fill(card.accentColor.opacity(0.2)).frame(height: 0.5)
+                Spacer()
+                Rectangle().fill(card.accentColor.opacity(0.1)).frame(height: 0.5)
+            }
         )
+        .clipShape(UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: 0, bottomTrailingRadius: DT.Radius.sm, topTrailingRadius: DT.Radius.sm))
+        .shadow(color: card.accentColor.opacity(0.2), radius: 8, y: 2)
     }
 
     private func showCard(_ card: NotificationCard, duration: TimeInterval = 6) {
