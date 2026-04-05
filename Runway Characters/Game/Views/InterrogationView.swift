@@ -135,100 +135,128 @@ struct InterrogationView: View {
     }
 
 
-    // MARK: - Game Top Bar
+    // MARK: - Game Top Bar (Stylized HUD)
 
     private var gameTopBar: some View {
-        HStack {
-            // Suspect info
-            VStack(alignment: .leading, spacing: 2) {
-                Text(suspect.name)
-                    .font(DT.Typo.cardTitle)
-                    .foregroundStyle(DT.Colors.fog)
-                Text(suspect.role)
-                    .font(DT.Typo.footnote)
-                    .foregroundStyle(DT.Colors.steel)
+        ZStack {
+            // Angular background strip
+            Path { p in
+                p.move(to: CGPoint(x: 0, y: 0))
+                p.addLine(to: CGPoint(x: UIScreen.main.bounds.width, y: 0))
+                p.addLine(to: CGPoint(x: UIScreen.main.bounds.width, y: 58))
+                p.addLine(to: CGPoint(x: UIScreen.main.bounds.width * 0.7, y: 58))
+                p.addLine(to: CGPoint(x: UIScreen.main.bounds.width * 0.65, y: 48))
+                p.addLine(to: CGPoint(x: 0, y: 48))
+                p.closeSubpath()
             }
+            .fill(DT.Colors.void.opacity(0.85))
 
-            Spacer()
+            // Amber accent line at bottom
+            Path { p in
+                p.move(to: CGPoint(x: 0, y: 48))
+                p.addLine(to: CGPoint(x: UIScreen.main.bounds.width * 0.65, y: 48))
+                p.addLine(to: CGPoint(x: UIScreen.main.bounds.width * 0.7, y: 58))
+                p.addLine(to: CGPoint(x: UIScreen.main.bounds.width, y: 58))
+            }
+            .stroke(DT.Colors.warmGlow.opacity(0.3), lineWidth: 1)
 
-            // Suspicion meter
-            if gameState.gameMaster.suspicionLevel > 0 {
-                HStack(spacing: 4) {
-                    Image(systemName: "eye.fill")
-                        .font(.system(size: 10))
-                    GeometryReader { geo in
-                        ZStack(alignment: .leading) {
-                            Capsule().fill(.white.opacity(0.15))
-                            Capsule()
-                                .fill(suspicionColor)
-                                .frame(width: geo.size.width * gameState.gameMaster.suspicionLevel)
-                                .animation(.easeOut(duration: 0.5), value: gameState.gameMaster.suspicionLevel)
+            HStack(alignment: .center) {
+                // Suspect name plate
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(suspect.name.uppercased())
+                        .font(.system(size: 15, weight: .black, design: .monospaced))
+                        .foregroundStyle(DT.Colors.fog)
+                        .tracking(1)
+                    Text(suspect.role.uppercased())
+                        .font(.system(size: 9, weight: .bold, design: .monospaced))
+                        .foregroundStyle(DT.Colors.warmGlow.opacity(0.6))
+                        .tracking(2)
+                }
+
+                Spacer()
+
+                // Suspicion meter — angular bar
+                if gameState.gameMaster.suspicionLevel > 0 {
+                    HStack(spacing: 6) {
+                        Text("SUS")
+                            .font(.system(size: 8, weight: .black, design: .monospaced))
+                            .foregroundStyle(suspicionColor.opacity(0.7))
+                        GeometryReader { geo in
+                            ZStack(alignment: .leading) {
+                                // Track
+                                UnevenRoundedRectangle(bottomTrailingRadius: 4, topTrailingRadius: 4)
+                                    .fill(DT.Colors.surface)
+                                // Fill
+                                UnevenRoundedRectangle(bottomTrailingRadius: 4, topTrailingRadius: 4)
+                                    .fill(suspicionColor)
+                                    .frame(width: geo.size.width * gameState.gameMaster.suspicionLevel)
+                                    .shadow(color: suspicionColor.opacity(0.6), radius: 4)
+                                    .animation(.easeOut(duration: 0.5), value: gameState.gameMaster.suspicionLevel)
+                            }
                         }
+                        .frame(width: 50, height: 6)
                     }
-                    .frame(width: 40, height: 4)
                 }
-                .foregroundStyle(suspicionColor)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 6)
-                .background(.ultraThinMaterial, in: Capsule())
-            }
 
-            // Clue count badge
-            if !gameState.discoveredClues.isEmpty {
-                HStack(spacing: 4) {
-                    Image(systemName: "magnifyingglass")
-                        .font(.caption)
-                    Text("\(gameState.discoveredClues.count)")
-                        .font(.system(size: 14, weight: .bold).monospacedDigit())
+                // Clue count
+                if !gameState.discoveredClues.isEmpty {
+                    HStack(spacing: 3) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 9))
+                        Text("\(gameState.discoveredClues.count)")
+                            .font(.system(size: 13, weight: .black).monospacedDigit())
+                    }
+                    .foregroundStyle(DT.Colors.warmGlow)
                 }
-                .foregroundStyle(DT.Colors.warmGlow)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 5)
-                .background(DT.Colors.surface.opacity(0.8), in: Capsule())
-            }
 
-            // Timer
-            if let callStart {
-                CallTimerView(startDate: callStart)
-                    .font(DT.Typo.data)
-                    .foregroundStyle(DT.Colors.fog.opacity(0.8))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .background(DT.Colors.surface.opacity(0.8), in: Capsule())
+                // Timer
+                if let callStart {
+                    CallTimerView(startDate: callStart)
+                        .font(.system(size: 13, weight: .bold).monospacedDigit())
+                        .foregroundStyle(DT.Colors.fog.opacity(0.7))
+                }
             }
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .background(.ultraThinMaterial.opacity(0.5))
+        .frame(height: 58)
     }
 
-    // MARK: - Transcription
+    // MARK: - Transcription (Interrogation Transcript Style)
 
     private var transcriptionArea: some View {
         ScrollViewReader { proxy in
             ScrollView(.vertical, showsIndicators: false) {
-                VStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 4) {
                     ForEach(session.transcriptions) { entry in
-                        HStack {
-                            if entry.role == "user" { Spacer(minLength: 60) }
+                        let isUser = entry.role == "user"
+                        HStack(alignment: .top, spacing: 8) {
+                            // Role tag
+                            Text(isUser ? "DET." : "SUS.")
+                                .font(.system(size: 8, weight: .black, design: .monospaced))
+                                .foregroundStyle(isUser ? DT.Colors.suggestion : DT.Colors.warmGlow)
+                                .frame(width: 28, alignment: .trailing)
+                                .padding(.top, 3)
+
+                            // Accent line
+                            Rectangle()
+                                .fill(isUser ? DT.Colors.suggestion.opacity(0.3) : DT.Colors.warmGlow.opacity(0.2))
+                                .frame(width: 2)
+                                .padding(.vertical, 2)
+
+                            // Text
                             Text(entry.text)
-                                .font(.system(size: 14))
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(
-                                    entry.role == "user" ? Color.blue : Color.white.opacity(0.15),
-                                    in: RoundedRectangle(cornerRadius: 14)
-                                )
-                            if entry.role != "user" { Spacer(minLength: 60) }
+                                .font(.system(size: 13, design: .serif))
+                                .foregroundStyle(isUser ? DT.Colors.fog.opacity(0.7) : DT.Colors.fog)
+                                .frame(maxWidth: .infinity, alignment: .leading)
                         }
                         .id(entry.id)
                     }
                 }
                 .padding(.horizontal, 16)
             }
-            .frame(maxHeight: 180)
-            .mask(LinearGradient(colors: [.clear, .black, .black], startPoint: .top, endPoint: .bottom))
+            .frame(maxHeight: 200)
+            .mask(LinearGradient(colors: [.clear, .black, .black, .black], startPoint: .top, endPoint: .bottom))
             .onChange(of: session.transcriptions.count) { _, _ in
                 if let last = session.transcriptions.last {
                     withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
@@ -237,97 +265,146 @@ struct InterrogationView: View {
         }
     }
 
-    // MARK: - Controls
+    // MARK: - Controls (Stylized Angular Bar)
 
     private var gameControls: some View {
-        HStack(spacing: 0) {
-            controlBtn(icon: isMuted ? "mic.slash.fill" : "mic.fill", label: isMuted ? "Unmute" : "Mute", active: isMuted) {
+        HStack(spacing: DT.Space.md) {
+            hudButton(icon: isMuted ? "mic.slash.fill" : "mic.fill", label: "MIC", active: !isMuted, color: DT.Colors.suggestion) {
                 isMuted.toggle()
                 Task { try? await session._room?.localParticipant.setMicrophone(enabled: !isMuted) }
             }
-            Spacer()
-            controlBtn(icon: "captions.bubble.fill", label: "Captions", active: showTranscription) {
+            hudButton(icon: "text.quote", label: "LOG", active: showTranscription, color: DT.Colors.steel) {
                 withAnimation { showTranscription.toggle() }
             }
-            Spacer()
             ZStack(alignment: .topTrailing) {
-                controlBtn(icon: "magnifyingglass", label: "Investigate", active: showInvestigate) {
+                hudButton(icon: "magnifyingglass", label: "CLUES", active: showInvestigate, color: DT.Colors.warmGlow) {
                     withAnimation { showInvestigate.toggle() }
                     gameState.newQuestionsAvailable = false
                 }
                 // Pulse dot when new questions available
                 if gameState.newQuestionsAvailable && !showInvestigate {
                     Circle()
-                        .fill(.orange)
-                        .frame(width: 10, height: 10)
-                        .offset(x: 2, y: -2)
+                        .fill(DT.Colors.warmGlow)
+                        .frame(width: 8, height: 8)
+                        .shadow(color: DT.Colors.warmGlow, radius: 4)
+                        .offset(x: 4, y: -4)
                 }
             }
+
             Spacer()
-            // End interrogation (red)
+
+            // End interrogation — angular red button
             Button { showEndConfirm = true } label: {
-                VStack(spacing: 6) {
-                    Image(systemName: "door.left.hand.open")
-                        .font(.system(size: 20, weight: .medium))
-                        .foregroundStyle(.white)
-                        .frame(width: 52, height: 52)
-                        .background(Color.red, in: Circle())
-                    Text("End")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.white.opacity(0.8))
+                HStack(spacing: 4) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 12, weight: .black))
+                    Text("END")
+                        .font(.system(size: 10, weight: .black, design: .monospaced))
+                        .tracking(2)
                 }
+                .foregroundStyle(DT.Colors.fog)
+                .padding(.horizontal, DT.Space.lg)
+                .padding(.vertical, DT.Space.md)
+                .background(DT.Colors.ember, in: UnevenRoundedRectangle(topLeadingRadius: DT.Radius.sm, bottomTrailingRadius: DT.Radius.sm, topTrailingRadius: DT.Radius.md, bottomLeadingRadius: DT.Radius.md))
+                .shadow(color: DT.Colors.ember.opacity(0.4), radius: 6)
             }
         }
-        .padding(.horizontal, 36)
-        .padding(.bottom, 24)
+        .padding(.horizontal, 20)
+        .padding(.bottom, 20)
         .background(
-            LinearGradient(colors: [.clear, .black.opacity(0.6)], startPoint: .top, endPoint: .bottom)
-                .ignoresSafeArea()
+            DT.Grad.bottomFade.ignoresSafeArea()
         )
     }
 
-    private func controlBtn(icon: String, label: String, active: Bool, action: @escaping () -> Void) -> some View {
+    private func hudButton(icon: String, label: String, active: Bool, color: Color, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            VStack(spacing: 6) {
+            VStack(spacing: 3) {
                 Image(systemName: icon)
-                    .font(.system(size: 20, weight: .medium))
-                    .foregroundStyle(active ? .black : .white)
-                    .frame(width: 52, height: 52)
-                    .background(active ? Color.white : Color.white.opacity(0.2), in: Circle())
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(active ? color : DT.Colors.smoke)
                 Text(label)
-                    .font(.system(size: 11))
-                    .foregroundStyle(.white.opacity(0.8))
+                    .font(.system(size: 8, weight: .bold, design: .monospaced))
+                    .foregroundStyle(active ? color.opacity(0.7) : DT.Colors.smoke)
+                    .tracking(1)
             }
+            .frame(width: 50)
         }
     }
 
     // MARK: - Connecting
 
+    @State private var ringScale: CGFloat = 0.6
+
     private var connectingOverlay: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
-            VStack(spacing: 20) {
-                Image(systemName: "person.crop.circle.badge.questionmark")
-                    .font(.system(size: 72))
-                    .foregroundStyle(.orange.opacity(0.6))
-                    .symbolEffect(.pulse)
-                Text(suspect.name)
-                    .font(.system(size: 24, weight: .semibold, design: .serif))
-                    .foregroundStyle(.white)
-                Text(session.connectingStatus.isEmpty ? "Entering interrogation room..." : session.connectingStatus)
-                    .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.6))
-                    .animation(.easeInOut, value: session.connectingStatus)
+            DT.Colors.void.ignoresSafeArea()
+
+            // Subtle radial pulse
+            RadialGradient(
+                colors: [DT.Colors.warmGlow.opacity(0.06), .clear],
+                center: .center, startRadius: 20, endRadius: 300
+            )
+            .ignoresSafeArea()
+
+            VStack(spacing: DT.Space.xl) {
+                // Expanding concentric rings
+                ZStack {
+                    ForEach(0..<3, id: \.self) { i in
+                        Circle()
+                            .stroke(DT.Colors.warmGlow.opacity(0.15 - Double(i) * 0.04), lineWidth: 1)
+                            .frame(width: 80 + CGFloat(i) * 40, height: 80 + CGFloat(i) * 40)
+                            .scaleEffect(ringScale)
+                            .animation(
+                                .easeInOut(duration: 2).repeatForever(autoreverses: true).delay(Double(i) * 0.3),
+                                value: ringScale
+                            )
+                    }
+                    Image(systemName: "person.fill")
+                        .font(.system(size: 36))
+                        .foregroundStyle(DT.Colors.warmGlow.opacity(0.5))
+                }
+
+                VStack(spacing: DT.Space.sm) {
+                    Text(suspect.name.uppercased())
+                        .font(.system(size: 18, weight: .black, design: .monospaced))
+                        .foregroundStyle(DT.Colors.fog)
+                        .tracking(3)
+
+                    Text(session.connectingStatus.isEmpty ? "ENTERING INTERROGATION ROOM" : session.connectingStatus.uppercased())
+                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                        .foregroundStyle(DT.Colors.warmGlow.opacity(0.5))
+                        .tracking(2)
+                        .animation(.easeInOut, value: session.connectingStatus)
+
+                    // Loading dots
+                    HStack(spacing: 4) {
+                        ForEach(0..<3, id: \.self) { i in
+                            Circle()
+                                .fill(DT.Colors.warmGlow.opacity(0.4))
+                                .frame(width: 4, height: 4)
+                                .animation(
+                                    .easeInOut(duration: 0.6).repeatForever().delay(Double(i) * 0.2),
+                                    value: ringScale
+                                )
+                        }
+                    }
+                    .padding(.top, DT.Space.sm)
+                }
 
                 Button {
                     Task { await session.disconnect() }
                     gameState.endInterrogation()
                 } label: {
-                    Text("Cancel")
-                        .foregroundStyle(.white.opacity(0.6))
+                    Text("CANCEL")
+                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                        .foregroundStyle(DT.Colors.smoke)
+                        .tracking(2)
                 }
-                .padding(.top, 20)
+                .padding(.top, DT.Space.xl)
             }
+        }
+        .onAppear {
+            ringScale = 1.0
         }
     }
 
