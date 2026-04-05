@@ -148,13 +148,13 @@ struct VerdictView: View {
                                         .font(DT.Typo.sectionLabel)
                                         .foregroundStyle(DT.Colors.warmGlow)
                                     Spacer()
-                                    Text("\(scoreValues[4])")
+                                    (Text("\(scoreValues[4])")
                                         .font(.system(size: 28, weight: .bold).monospacedDigit())
-                                        .foregroundStyle(DT.Colors.warmGlow)
-                                        .shadow(color: DT.Colors.warmGlow.opacity(0.3), radius: 8)
+                                        .foregroundColor(DT.Colors.warmGlow)
                                     + Text(" pts")
                                         .font(.system(size: 14, weight: .medium))
-                                        .foregroundStyle(DT.Colors.warmGlow.opacity(0.6))
+                                        .foregroundColor(DT.Colors.warmGlow.opacity(0.6)))
+                                    .shadow(color: DT.Colors.warmGlow.opacity(0.3), radius: 8)
                                 }
                             }
                             .padding(DT.Space.lg)
