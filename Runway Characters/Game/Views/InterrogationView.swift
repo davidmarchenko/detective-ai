@@ -39,19 +39,16 @@ struct InterrogationView: View {
                 gameControls
             }
 
-            // Unified notification card (one slot above controls)
+            // Unified notification card (above controls)
             if let card = activeCard, session.state == .active {
                 VStack {
                     Spacer()
                     notificationCard(card)
                         .padding(.horizontal, 16)
-                        .padding(.bottom, 70) // above the 60pt control bar
                 }
-                .transition(.asymmetric(
-                    insertion: .move(edge: .leading).combined(with: .opacity),
-                    removal: .opacity
-                ))
-                .animation(.spring(duration: 0.35), value: activeCard?.id)
+                .padding(.bottom, 80) // clear the control bar
+                .transition(.opacity)
+                .animation(.easeOut(duration: 0.3), value: activeCard?.id)
             }
 
             // Connecting overlay
@@ -386,11 +383,9 @@ struct InterrogationView: View {
             }
             .frame(height: 56)
             .background(DT.Colors.void.opacity(0.95))
-
-            // Safe area padding for home indicator
-            DT.Colors.void.opacity(0.95)
-                .frame(height: 20)
         }
+        .background(DT.Colors.void.opacity(0.95))  // extends into safe area
+        .padding(.bottom, -8) // slight overlap to ensure no gap on any device
     }
 
     private var hudDivider: some View {
@@ -499,35 +494,35 @@ struct InterrogationView: View {
     private func errorOverlay(_ message: String) -> some View {
         let isReconnecting = message.contains("reconnect")
         return ZStack {
-            Color.black.opacity(0.85).ignoresSafeArea()
-            VStack(spacing: 16) {
+            DT.Colors.void.opacity(0.9).ignoresSafeArea()
+            VStack(spacing: DT.Space.lg) {
                 if isReconnecting {
                     ProgressView()
                         .scaleEffect(1.3)
-                        .tint(.orange)
+                        .tint(DT.Colors.warmGlow)
                     Text("Connection Lost")
-                        .font(.headline)
-                        .foregroundStyle(.white)
+                        .font(DT.Typo.cardTitle)
+                        .foregroundStyle(DT.Colors.fog)
                     Text("Trying to reconnect...")
-                        .font(.subheadline)
-                        .foregroundStyle(.white.opacity(0.6))
+                        .font(DT.Typo.caption)
+                        .foregroundStyle(DT.Colors.steel)
                     Text("Your evidence is saved")
-                        .font(.caption)
-                        .foregroundStyle(.orange.opacity(0.7))
+                        .font(DT.Typo.footnote)
+                        .foregroundStyle(DT.Colors.warmGlow.opacity(0.7))
                 } else {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .font(.system(size: 40))
-                        .foregroundStyle(.yellow)
+                        .foregroundStyle(DT.Colors.suspicion)
                     Text("Interrogation Failed")
-                        .font(.headline)
-                        .foregroundStyle(.white)
+                        .font(DT.Typo.cardTitle)
+                        .foregroundStyle(DT.Colors.fog)
                     Text(message)
-                        .font(.caption)
-                        .foregroundStyle(.white.opacity(0.6))
+                        .font(DT.Typo.footnote)
+                        .foregroundStyle(DT.Colors.steel)
                         .multilineTextAlignment(.center)
-                        .padding(.horizontal)
+                        .padding(.horizontal, DT.Space.xl)
                 }
-                HStack(spacing: 16) {
+                HStack(spacing: DT.Space.lg) {
                     Button("Reconnect") {
                         Task {
                             await session.connect(
@@ -720,7 +715,7 @@ struct InterrogationView: View {
                 showCard(NotificationCard(
                     label: importance == "critical" ? "KEY EVIDENCE" : "CLUE FOUND",
                     text: text,
-                    accentColor: importance == "critical" ? .red : .orange
+                    accentColor: importance == "critical" ? DT.Colors.ember : DT.Colors.warmGlow
                 ))
             }
 
