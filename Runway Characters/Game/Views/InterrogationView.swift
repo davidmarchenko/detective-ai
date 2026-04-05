@@ -149,32 +149,24 @@ struct InterrogationView: View {
             let lineWidth: CGFloat = 1.5
 
             ZStack {
-                // Corner brackets
-                Group {
+                // Corner brackets (single path)
+                Path { p in
                     // Top-left
-                    Path { p in
-                        p.move(to: CGPoint(x: inset, y: inset + bracketSize))
-                        p.addLine(to: CGPoint(x: inset, y: inset))
-                        p.addLine(to: CGPoint(x: inset + bracketSize, y: inset))
-                    }
+                    p.move(to: CGPoint(x: inset, y: inset + bracketSize))
+                    p.addLine(to: CGPoint(x: inset, y: inset))
+                    p.addLine(to: CGPoint(x: inset + bracketSize, y: inset))
                     // Top-right
-                    Path { p in
-                        p.move(to: CGPoint(x: w - inset - bracketSize, y: inset))
-                        p.addLine(to: CGPoint(x: w - inset, y: inset))
-                        p.addLine(to: CGPoint(x: w - inset, y: inset + bracketSize))
-                    }
+                    p.move(to: CGPoint(x: w - inset - bracketSize, y: inset))
+                    p.addLine(to: CGPoint(x: w - inset, y: inset))
+                    p.addLine(to: CGPoint(x: w - inset, y: inset + bracketSize))
                     // Bottom-left
-                    Path { p in
-                        p.move(to: CGPoint(x: inset, y: h - inset - bracketSize))
-                        p.addLine(to: CGPoint(x: inset, y: h - inset))
-                        p.addLine(to: CGPoint(x: inset + bracketSize, y: h - inset))
-                    }
+                    p.move(to: CGPoint(x: inset, y: h - inset - bracketSize))
+                    p.addLine(to: CGPoint(x: inset, y: h - inset))
+                    p.addLine(to: CGPoint(x: inset + bracketSize, y: h - inset))
                     // Bottom-right
-                    Path { p in
-                        p.move(to: CGPoint(x: w - inset - bracketSize, y: h - inset))
-                        p.addLine(to: CGPoint(x: w - inset, y: h - inset))
-                        p.addLine(to: CGPoint(x: w - inset, y: h - inset - bracketSize))
-                    }
+                    p.move(to: CGPoint(x: w - inset - bracketSize, y: h - inset))
+                    p.addLine(to: CGPoint(x: w - inset, y: h - inset))
+                    p.addLine(to: CGPoint(x: w - inset, y: h - inset - bracketSize))
                 }
                 .stroke(DT.Colors.warmGlow.opacity(0.25), lineWidth: lineWidth)
 
