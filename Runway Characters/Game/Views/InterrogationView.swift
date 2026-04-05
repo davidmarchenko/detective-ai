@@ -37,17 +37,20 @@ struct InterrogationView: View {
                 topBar
                 Spacer()
                 if showTranscription { transcriptView }
+                controlBar
+            }
 
-                // Notification card (above controls)
-                if let card = activeCard, session.state == .active {
+            // Notification card — floating overlay, pinned above control bar
+            if let card = activeCard, session.state == .active {
+                VStack {
+                    Spacer()
                     notificationCard(card)
                         .padding(.horizontal, 16)
-                        .padding(.bottom, 8)
-                        .transition(.opacity)
-                        .animation(.easeOut(duration: 0.3), value: activeCard?.id)
+                        .padding(.bottom, 64) // above the 52pt control bar
                 }
-
-                controlBar
+                .transition(.opacity)
+                .animation(.easeOut(duration: 0.3), value: activeCard?.id)
+                .allowsHitTesting(true)
             }
 
             // Overlays
@@ -171,7 +174,7 @@ struct InterrogationView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
-        .background(.ultraThinMaterial)
+        .background(Color.black.opacity(0.7))
     }
 
     // MARK: - Transcript
@@ -215,13 +218,13 @@ struct InterrogationView: View {
     // MARK: - Control Bar
 
     private var controlBar: some View {
-        HStack(spacing: 0) {
+        HStack(spacing: 1) {
             // Mic
             controlButton(
                 icon: isMuted ? "mic.slash.fill" : "mic.fill",
                 label: isMuted ? "Unmute" : "Mute",
                 isActive: !isMuted,
-                activeColor: DT.Colors.suggestion
+                tint: .blue
             ) {
                 isMuted.toggle()
                 Task { try? await session._room?.localParticipant.setMicrophone(enabled: !isMuted) }
@@ -232,7 +235,7 @@ struct InterrogationView: View {
                 icon: "text.bubble.fill",
                 label: "Log",
                 isActive: showTranscription,
-                activeColor: DT.Colors.fog
+                tint: .white
             ) {
                 withAnimation { showTranscription.toggle() }
             }
@@ -243,44 +246,45 @@ struct InterrogationView: View {
                     icon: "magnifyingglass",
                     label: "Clues",
                     isActive: showInvestigate,
-                    activeColor: DT.Colors.warmGlow
+                    tint: .orange
                 ) {
                     showInvestigate.toggle()
                     gameState.newQuestionsAvailable = false
                 }
                 if gameState.newQuestionsAvailable && !showInvestigate {
                     Circle()
-                        .fill(DT.Colors.warmGlow)
+                        .fill(.orange)
                         .frame(width: 8, height: 8)
-                        .shadow(color: DT.Colors.warmGlow, radius: 3)
+                        .shadow(color: .orange, radius: 3)
                         .offset(x: -8, y: 8)
                 }
             }
 
-            // End call
+            // End call — red, unmissable
             Button { showEndConfirm = true } label: {
                 Image(systemName: "phone.down.fill")
-                    .font(.system(size: 20, weight: .semibold))
+                    .font(.system(size: 22, weight: .bold))
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(DT.Colors.ember)
+                    .background(Color.red)
             }
         }
         .frame(height: 52)
-        .background(.ultraThinMaterial)
+        .background(Color.black.opacity(0.85)) // opaque — always readable
     }
 
-    private func controlButton(icon: String, label: String, isActive: Bool, activeColor: Color, action: @escaping () -> Void) -> some View {
+    private func controlButton(icon: String, label: String, isActive: Bool, tint: Color, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            VStack(spacing: 3) {
+            VStack(spacing: 4) {
                 Image(systemName: icon)
-                    .font(.system(size: 18))
-                    .foregroundStyle(isActive ? activeColor : DT.Colors.smoke)
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundStyle(isActive ? tint : .white.opacity(0.5))
                 Text(label)
-                    .font(.system(size: 10))
-                    .foregroundStyle(isActive ? activeColor.opacity(0.7) : DT.Colors.smoke)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(isActive ? tint.opacity(0.8) : .white.opacity(0.4))
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(isActive ? tint.opacity(0.15) : .clear)
         }
     }
 
@@ -322,10 +326,11 @@ struct InterrogationView: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .frame(maxHeight: 80) // NEVER cover the screen
+        .background(Color.black.opacity(0.85), in: RoundedRectangle(cornerRadius: 12))
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(card.accentColor.opacity(0.2), lineWidth: 0.5)
+                .stroke(card.accentColor.opacity(0.3), lineWidth: 1)
         )
     }
 
@@ -453,7 +458,8 @@ struct InterrogationView: View {
                 }
             }
             .padding(24)
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20))
+            .background(Color.black.opacity(0.9), in: RoundedRectangle(cornerRadius: 20))
+            .overlay(RoundedRectangle(cornerRadius: 20).stroke(.white.opacity(0.1), lineWidth: 0.5))
         }
     }
 
