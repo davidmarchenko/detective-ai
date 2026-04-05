@@ -182,26 +182,7 @@ struct InterrogationView: View {
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 8) {
                     ForEach(session.transcriptions) { entry in
-                        let isUser = entry.role == "user"
-                        HStack(alignment: .top, spacing: 10) {
-                            // Role tag — fixed width so text aligns
-                            Text(isUser ? "You" : suspect.name.components(separatedBy: " ").first ?? "—")
-                                .font(.system(size: 11, weight: .semibold))
-                                .foregroundStyle(isUser ? .blue : .orange)
-                                .frame(width: 44, alignment: .trailing)
-
-                            // Accent line — min height ensures visibility
-                            Rectangle()
-                                .fill(isUser ? Color.blue.opacity(0.3) : Color.orange.opacity(0.2))
-                                .frame(width: 2, minHeight: 16)
-
-                            // Text — no lineLimit, wraps freely
-                            Text(entry.text)
-                                .font(.system(size: 14))
-                                .foregroundStyle(.white.opacity(isUser ? 0.6 : 0.9))
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                        .id(entry.id)
+                        transcriptRow(entry)
                     }
                 }
                 .padding(.horizontal, 20)
@@ -216,6 +197,31 @@ struct InterrogationView: View {
                 }
             }
         }
+    }
+
+    private func transcriptRow(_ entry: TranscriptionEntry) -> some View {
+        let isUser = entry.role == "user"
+        let tagColor: Color = isUser ? .blue : .orange
+        let tagName = isUser ? "You" : (suspect.name.components(separatedBy: " ").first ?? "—")
+        let textOpacity: Double = isUser ? 0.6 : 0.9
+
+        return HStack(alignment: .top, spacing: 10) {
+            Text(tagName)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(tagColor)
+                .frame(width: 44, alignment: .trailing)
+
+            Rectangle()
+                .fill(tagColor.opacity(0.3))
+                .frame(width: 2)
+                .frame(minHeight: 16)
+
+            Text(entry.text)
+                .font(.system(size: 14))
+                .foregroundStyle(.white.opacity(textOpacity))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .id(entry.id)
     }
 
     // MARK: - Control Bar
@@ -289,7 +295,8 @@ struct InterrogationView: View {
             // Accent bar
             RoundedRectangle(cornerRadius: 2)
                 .fill(card.accentColor)
-                .frame(width: 4, minHeight: 30)
+                .frame(width: 4)
+                .frame(minHeight: 30)
                 .shadow(color: card.accentColor.opacity(0.3), radius: 3)
 
             // Content
