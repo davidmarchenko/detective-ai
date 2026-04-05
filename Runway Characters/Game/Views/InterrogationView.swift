@@ -32,19 +32,26 @@ struct InterrogationView: View {
             cornerBrackets.allowsHitTesting(false)
 
             // Main HUD — respects safe area automatically
+            // Main HUD
             VStack(spacing: 0) {
                 topBar
                 Spacer()
                 if showTranscription { transcriptView }
-                // Notification card sits between transcript and controls
-                if let card = activeCard, session.state == .active {
-                    notificationCard(card)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .transition(.opacity)
-                        .animation(.easeOut(duration: 0.3), value: activeCard?.id)
-                }
                 controlBar
+            }
+
+            // Notification card — SEPARATE layer, bottom-aligned, hard size cap
+            if let card = activeCard, session.state == .active {
+                VStack {
+                    Spacer()
+                    notificationCard(card)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxHeight: 100)
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 66)
+                }
+                .transition(.opacity)
+                .animation(.easeOut(duration: 0.3), value: activeCard?.id)
             }
 
             // Modal overlays
@@ -310,8 +317,7 @@ struct InterrogationView: View {
                 Text(card.text)
                     .font(.system(size: 13))
                     .foregroundStyle(.white.opacity(0.9))
-                    .lineLimit(3) // enough for suggestions
-                    .fixedSize(horizontal: false, vertical: true)
+                    .lineLimit(3)
             }
 
             Spacer(minLength: 4)
