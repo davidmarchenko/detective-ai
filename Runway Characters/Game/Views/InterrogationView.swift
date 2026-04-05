@@ -36,13 +36,13 @@ struct InterrogationView: View {
             // Corner brackets (decorative, respects safe area insets)
             cornerBrackets.allowsHitTesting(false)
 
-            // Main HUD — respects safe area automatically
             // Main HUD
             VStack(spacing: 0) {
                 topBar
                 Spacer()
                 if showTranscription { transcriptView }
-                controlBar
+                floatingControls
+                    .padding(.bottom, 8)
             }
 
             // Notification card — SEPARATE layer, bottom-aligned, hard size cap
@@ -53,7 +53,7 @@ struct InterrogationView: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(maxHeight: 100)
                         .padding(.horizontal, 16)
-                        .padding(.bottom, 66)
+                        .padding(.bottom, 80)
                 }
                 .transition(.opacity)
                 .animation(.easeOut(duration: 0.3), value: activeCard?.id)
@@ -191,8 +191,8 @@ struct InterrogationView: View {
 
     private var transcriptView: some View {
         ScrollViewReader { proxy in
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 8) {
+            ScrollView(.vertical, showsIndicators: true) {
+                LazyVStack(alignment: .leading, spacing: 8) {
                     ForEach(session.transcriptions) { entry in
                         transcriptRow(entry)
                     }
@@ -201,8 +201,7 @@ struct InterrogationView: View {
                 .padding(.vertical, 8)
             }
             .frame(maxHeight: 200)
-            .background(Color.black.opacity(0.5))
-            .mask(LinearGradient(colors: [.clear, .black, .black, .black], startPoint: .top, endPoint: .bottom))
+            .defaultScrollAnchor(.bottom) // start at bottom, not top
             .onChange(of: session.transcriptions.count) { _, _ in
                 if let last = session.transcriptions.last {
                     withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
@@ -213,90 +212,83 @@ struct InterrogationView: View {
 
     private func transcriptRow(_ entry: TranscriptionEntry) -> some View {
         let isUser = entry.role == "user"
-        let tagColor: Color = isUser ? .blue : .orange
-        let tagName = isUser ? "You" : (suspect.name.components(separatedBy: " ").first ?? "—")
-        let textOpacity: Double = isUser ? 0.6 : 0.9
-
-        return HStack(alignment: .top, spacing: 10) {
-            Text(tagName)
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(tagColor)
-                .frame(width: 44, alignment: .trailing)
-
-            Rectangle()
-                .fill(tagColor.opacity(0.3))
-                .frame(width: 2)
-                .frame(minHeight: 16)
-
+        return HStack {
+            if isUser { Spacer(minLength: 80) }
             Text(entry.text)
                 .font(.system(size: 14))
-                .foregroundStyle(.white.opacity(textOpacity))
-                .fixedSize(horizontal: false, vertical: true)
+                .foregroundStyle(.white)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(
+                    isUser
+                        ? Color.blue.opacity(0.6)
+                        : Color.white.opacity(0.15),
+                    in: RoundedRectangle(cornerRadius: 16)
+                )
+            if !isUser { Spacer(minLength: 80) }
         }
         .id(entry.id)
     }
 
-    // MARK: - Control Bar
+    // MARK: - Floating Controls (FaceTime-style)
 
-    private var controlBar: some View {
-        VStack(spacing: 0) {
-            // Thin separator
-            Rectangle().fill(.white.opacity(0.1)).frame(height: 0.5)
+    private var floatingControls: some View {
+        HStack(spacing: 12) {
+            // Mic
+            floatingButton(
+                icon: isMuted ? "mic.slash.fill" : "mic.fill",
+                isActive: !isMuted
+            ) {
+                isMuted.toggle()
+                Task { try? await session._room?.localParticipant.setMicrophone(enabled: !isMuted) }
+            }
 
-            HStack(spacing: 0) {
-                controlButton(icon: isMuted ? "mic.slash.fill" : "mic.fill",
-                              label: isMuted ? "Unmute" : "Mute",
-                              isActive: !isMuted, tint: .blue) {
-                    isMuted.toggle()
-                    Task { try? await session._room?.localParticipant.setMicrophone(enabled: !isMuted) }
+            // Log
+            floatingButton(
+                icon: "captions.bubble.fill",
+                isActive: showTranscription
+            ) {
+                withAnimation { showTranscription.toggle() }
+            }
+
+            // Clues
+            ZStack(alignment: .topTrailing) {
+                floatingButton(
+                    icon: "magnifyingglass",
+                    isActive: showInvestigate
+                ) {
+                    showInvestigate.toggle()
+                    gameState.newQuestionsAvailable = false
                 }
-
-                controlButton(icon: "text.bubble.fill", label: "Log",
-                              isActive: showTranscription, tint: .white) {
-                    withAnimation { showTranscription.toggle() }
-                }
-
-                ZStack(alignment: .topTrailing) {
-                    controlButton(icon: "magnifyingglass", label: "Clues",
-                                  isActive: showInvestigate, tint: .orange) {
-                        showInvestigate.toggle()
-                        gameState.newQuestionsAvailable = false
-                    }
-                    if gameState.newQuestionsAvailable && !showInvestigate {
-                        Circle().fill(.orange).frame(width: 8, height: 8)
-                            .shadow(color: .orange, radius: 3)
-                            .offset(x: -8, y: 8)
-                    }
-                }
-
-                // End call
-                Button { showEndConfirm = true } label: {
-                    Image(systemName: "phone.down.fill")
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 56)
-                        .background(Color.red)
+                if gameState.newQuestionsAvailable && !showInvestigate {
+                    Circle().fill(.orange).frame(width: 8, height: 8)
+                        .shadow(color: .orange, radius: 3)
+                        .offset(x: -2, y: -2)
                 }
             }
-            .frame(height: 56)
+
+            // End call — red circle like FaceTime
+            Button { showEndConfirm = true } label: {
+                Image(systemName: "phone.down.fill")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 56, height: 56)
+                    .background(Color.red, in: Circle())
+            }
         }
-        .background(Color.black.opacity(0.85))
+        .padding(.horizontal, 24)
     }
 
-    private func controlButton(icon: String, label: String, isActive: Bool, tint: Color, action: @escaping () -> Void) -> some View {
+    private func floatingButton(icon: String, isActive: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            VStack(spacing: 4) {
-                Image(systemName: icon)
-                    .font(.system(size: 20, weight: .medium))
-                    .foregroundStyle(isActive ? tint : .white.opacity(0.5))
-                Text(label)
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(isActive ? tint.opacity(0.8) : .white.opacity(0.4))
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: 56) // explicit height — matches bar
-            .contentShape(Rectangle()) // full area is tappable
+            Image(systemName: icon)
+                .font(.system(size: 20, weight: .medium))
+                .foregroundStyle(isActive ? .white : .white.opacity(0.6))
+                .frame(width: 48, height: 48)
+                .background(
+                    isActive ? Color.white.opacity(0.25) : Color.black.opacity(0.4),
+                    in: Circle()
+                )
         }
     }
 
