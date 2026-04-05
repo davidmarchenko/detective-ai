@@ -15,6 +15,7 @@ struct InterrogationView: View {
     @State private var showNotebook = false
     @State private var showInvestigate = false
     @State private var activeCard: NotificationCard?
+    @State private var cardQueue: [NotificationCard] = []
     @State private var cardDismissTask: Task<Void, Never>?
 
     var body: some View {
@@ -475,14 +476,26 @@ struct InterrogationView: View {
     }
 
     private func showCard(_ card: NotificationCard, duration: TimeInterval = 6) {
+        if activeCard != nil {
+            // Queue it — will show after the current card dismisses
+            cardQueue.append(card)
+            return
+        }
         cardDismissTask?.cancel()
         withAnimation { activeCard = card }
         cardDismissTask = Task {
             try? await Task.sleep(for: .seconds(duration))
-            if activeCard?.id == card.id {
-                withAnimation { activeCard = nil }
-            }
+            withAnimation { activeCard = nil }
+            // Show next queued card after a brief gap
+            try? await Task.sleep(for: .seconds(0.3))
+            showNextQueuedCard()
         }
+    }
+
+    private func showNextQueuedCard() {
+        guard !cardQueue.isEmpty else { return }
+        let next = cardQueue.removeFirst()
+        showCard(next)
     }
 
     // MARK: - Game Master UI Events
