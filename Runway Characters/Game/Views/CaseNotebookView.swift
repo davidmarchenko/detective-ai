@@ -7,36 +7,33 @@ struct CaseNotebookView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: DT.Space.xl) {
                     // Case summary
                     if let mystery = gameState.mystery {
-                        Section {
-                            VStack(alignment: .leading, spacing: 8) {
-                                notebookLabel("VICTIM")
-                                Text(mystery.victimName)
-                                    .font(.system(size: 15, weight: .medium))
-                                    .foregroundStyle(.white)
+                        VStack(alignment: .leading, spacing: DT.Space.sm) {
+                            NoirSectionLabel(text: "VICTIM")
+                            Text(mystery.victimName)
+                                .font(DT.Typo.body)
+                                .fontWeight(.medium)
+                                .foregroundStyle(DT.Colors.fog)
 
-                                notebookLabel("LOCATION")
-                                Text(mystery.setting)
-                                    .font(.system(size: 14))
-                                    .foregroundStyle(.white.opacity(0.7))
+                            NoirSectionLabel(text: "LOCATION")
+                            Text(mystery.setting)
+                                .font(DT.Typo.caption)
+                                .foregroundStyle(DT.Colors.steel)
 
-                                notebookLabel("BRIEFING")
-                                Text(mystery.briefing)
-                                    .font(.system(size: 13, design: .serif))
-                                    .foregroundStyle(.white.opacity(0.7))
-                                    .lineSpacing(3)
-                            }
-                            .padding(14)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
+                            NoirSectionLabel(text: "BRIEFING")
+                            Text(mystery.briefing)
+                                .font(DT.Typo.evidence)
+                                .foregroundStyle(DT.Colors.steel)
+                                .lineSpacing(3)
                         }
+                        .evidenceCard(accent: DT.Colors.warmGlow)
                     }
 
                     // Suspects
-                    Section {
-                        notebookLabel("SUSPECTS")
+                    VStack(alignment: .leading, spacing: DT.Space.md) {
+                        NoirSectionLabel(text: "SUSPECTS")
                         ForEach(gameState.suspectsAvailable) { suspect in
                             suspectRow(suspect)
                         }
@@ -44,31 +41,40 @@ struct CaseNotebookView: View {
 
                     // Clues grouped by suspect
                     if !gameState.discoveredClues.isEmpty {
-                        Section {
-                            notebookLabel("CLUES (\(gameState.discoveredClues.count))")
-                            legendRow
+                        VStack(alignment: .leading, spacing: DT.Space.md) {
+                            NoirSectionLabel(text: "CLUES (\(gameState.discoveredClues.count))")
+
+                            HStack(spacing: DT.Space.lg) {
+                                legendDot(color: DT.Colors.ember, label: "Critical")
+                                legendDot(color: DT.Colors.warmGlow, label: "Supporting")
+                                legendDot(color: DT.Colors.smoke, label: "Red herring")
+                            }
+                            .font(DT.Typo.tagLabel)
+                            .foregroundStyle(DT.Colors.smoke)
 
                             let grouped = Dictionary(grouping: gameState.discoveredClues) { $0.suspectId }
                             ForEach(gameState.suspectsAvailable) { suspect in
                                 if let clues = grouped[suspect.id], !clues.isEmpty {
-                                    VStack(alignment: .leading, spacing: 6) {
+                                    VStack(alignment: .leading, spacing: DT.Space.sm) {
                                         Text(suspect.name)
-                                            .font(.system(size: 13, weight: .bold))
-                                            .foregroundStyle(.orange)
+                                            .font(DT.Typo.caption)
+                                            .fontWeight(.bold)
+                                            .foregroundStyle(DT.Colors.warmGlow)
                                         ForEach(clues) { clue in
-                                            HStack(alignment: .top, spacing: 8) {
+                                            HStack(alignment: .top, spacing: DT.Space.sm) {
                                                 Circle()
                                                     .fill(clueColor(clue.importance))
                                                     .frame(width: 6, height: 6)
+                                                    .shadow(color: clueColor(clue.importance).opacity(0.4), radius: 3)
                                                     .padding(.top, 5)
                                                 Text(clue.text)
-                                                    .font(.system(size: 13))
-                                                    .foregroundStyle(.white.opacity(0.8))
+                                                    .font(DT.Typo.footnote)
+                                                    .foregroundStyle(DT.Colors.fog.opacity(0.8))
                                             }
                                         }
                                     }
-                                    .padding(10)
-                                    .background(.white.opacity(0.03), in: RoundedRectangle(cornerRadius: 8))
+                                    .padding(DT.Space.md)
+                                    .background(DT.Colors.surface.opacity(0.5), in: RoundedRectangle(cornerRadius: DT.Radius.sm))
                                 }
                             }
                         }
@@ -76,73 +82,75 @@ struct CaseNotebookView: View {
 
                     // Contradictions
                     if !gameState.contradictions.isEmpty {
-                        Section {
-                            notebookLabel("CONTRADICTIONS (\(gameState.contradictions.count))")
+                        VStack(alignment: .leading, spacing: DT.Space.md) {
+                            NoirSectionLabel(text: "CONTRADICTIONS (\(gameState.contradictions.count))", color: DT.Colors.ember)
+
                             ForEach(Array(gameState.contradictions.enumerated()), id: \.offset) { _, item in
-                                VStack(alignment: .leading, spacing: 4) {
+                                VStack(alignment: .leading, spacing: DT.Space.xs) {
                                     Text(gameState.suspect(for: item.suspectId)?.name ?? item.suspectId)
-                                        .font(.system(size: 12, weight: .bold))
-                                        .foregroundStyle(.red)
+                                        .font(DT.Typo.tagLabel)
+                                        .foregroundStyle(DT.Colors.ember)
                                     Text("Said: \"\(item.original)\"")
-                                        .font(.system(size: 12))
-                                        .foregroundStyle(.white.opacity(0.5))
+                                        .font(DT.Typo.footnote)
+                                        .foregroundStyle(DT.Colors.smoke)
                                         .strikethrough()
                                     Text("Then: \"\(item.corrected)\"")
-                                        .font(.system(size: 12, weight: .medium))
-                                        .foregroundStyle(.white.opacity(0.8))
+                                        .font(DT.Typo.footnote)
+                                        .fontWeight(.medium)
+                                        .foregroundStyle(DT.Colors.fog.opacity(0.85))
                                 }
-                                .padding(8)
-                                .background(.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 6))
+                                .evidenceCard(accent: DT.Colors.ember)
                             }
                         }
                     }
 
                     Spacer().frame(height: 20)
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, DT.Space.lg)
             }
-            .background(Color.black)
+            .background(DT.Colors.void)
             .navigationTitle("Case Notebook")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") { dismiss() }
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(DT.Colors.warmGlow)
                 }
             }
         }
         .preferredColorScheme(.dark)
     }
 
-    // MARK: - Components
+    // MARK: - Suspect Row
 
     private func suspectRow(_ suspect: SuspectDefinition) -> some View {
         let interviewed = gameState.interviewedSuspects.contains(suspect.id)
         let clueCount = gameState.discoveredClues.filter { $0.suspectId == suspect.id }.count
 
-        return HStack(spacing: 10) {
+        return HStack(spacing: DT.Space.md) {
             Image(systemName: "person.crop.circle.fill")
                 .font(.title3)
-                .foregroundStyle(interviewed ? .green.opacity(0.6) : .white.opacity(0.3))
+                .foregroundStyle(interviewed ? DT.Colors.success.opacity(0.6) : DT.Colors.smoke)
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack {
                     Text(suspect.name)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(.white)
+                        .font(DT.Typo.caption)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(DT.Colors.fog)
                     if interviewed {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.system(size: 10))
-                            .foregroundStyle(.green)
+                            .foregroundStyle(DT.Colors.success)
                     }
                 }
                 Text(suspect.role)
-                    .font(.system(size: 12))
-                    .foregroundStyle(.white.opacity(0.5))
+                    .font(DT.Typo.footnote)
+                    .foregroundStyle(DT.Colors.smoke)
                 Text(suspect.briefDescription)
-                    .font(.system(size: 11))
-                    .foregroundStyle(.white.opacity(0.4))
+                    .font(DT.Typo.tagLabel)
+                    .foregroundStyle(DT.Colors.smoke)
                     .lineLimit(2)
             }
 
@@ -150,44 +158,28 @@ struct CaseNotebookView: View {
 
             if clueCount > 0 {
                 Text("\(clueCount) clue\(clueCount == 1 ? "" : "s")")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(.orange)
+                    .font(DT.Typo.tagLabel)
+                    .foregroundStyle(DT.Colors.warmGlow)
             }
         }
-        .padding(10)
-        .background(.white.opacity(0.03), in: RoundedRectangle(cornerRadius: 8))
-    }
-
-    private var legendRow: some View {
-        HStack(spacing: 16) {
-            legendDot(color: .red, label: "Critical")
-            legendDot(color: .orange, label: "Supporting")
-            legendDot(color: .gray, label: "Red herring")
-        }
-        .font(.system(size: 10))
-        .foregroundStyle(.white.opacity(0.4))
+        .padding(DT.Space.md)
+        .background(DT.Colors.surface.opacity(0.5), in: RoundedRectangle(cornerRadius: DT.Radius.sm))
     }
 
     private func legendDot(color: Color, label: String) -> some View {
         HStack(spacing: 4) {
             Circle().fill(color).frame(width: 6, height: 6)
+                .shadow(color: color.opacity(0.4), radius: 3)
             Text(label)
         }
     }
 
-    private func notebookLabel(_ text: String) -> some View {
-        Text(text)
-            .font(.system(size: 10, weight: .bold, design: .monospaced))
-            .foregroundStyle(.orange)
-            .tracking(2)
-    }
-
     private func clueColor(_ importance: String) -> Color {
         switch importance {
-        case "critical": .red
-        case "supporting": .orange
-        case "red_herring": .gray
-        default: .white
+        case "critical": DT.Colors.ember
+        case "supporting": DT.Colors.warmGlow
+        case "red_herring": DT.Colors.smoke
+        default: DT.Colors.fog
         }
     }
 }

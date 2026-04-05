@@ -141,11 +141,11 @@ struct InterrogationView: View {
             // Suspect info
             VStack(alignment: .leading, spacing: 2) {
                 Text(suspect.name)
-                    .font(.system(size: 16, weight: .semibold, design: .serif))
-                    .foregroundStyle(.white)
+                    .font(DT.Typo.cardTitle)
+                    .foregroundStyle(DT.Colors.fog)
                 Text(suspect.role)
-                    .font(.system(size: 12))
-                    .foregroundStyle(.white.opacity(0.6))
+                    .font(DT.Typo.footnote)
+                    .foregroundStyle(DT.Colors.steel)
             }
 
             Spacer()
@@ -180,20 +180,20 @@ struct InterrogationView: View {
                     Text("\(gameState.discoveredClues.count)")
                         .font(.system(size: 14, weight: .bold).monospacedDigit())
                 }
-                .foregroundStyle(.orange)
+                .foregroundStyle(DT.Colors.warmGlow)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 5)
-                .background(.ultraThinMaterial, in: Capsule())
+                .background(DT.Colors.surface.opacity(0.8), in: Capsule())
             }
 
             // Timer
             if let callStart {
                 CallTimerView(startDate: callStart)
-                    .font(.system(size: 14, weight: .medium).monospacedDigit())
-                    .foregroundStyle(.white.opacity(0.8))
+                    .font(DT.Typo.data)
+                    .foregroundStyle(DT.Colors.fog.opacity(0.8))
                     .padding(.horizontal, 10)
                     .padding(.vertical, 5)
-                    .background(.ultraThinMaterial, in: Capsule())
+                    .background(DT.Colors.surface.opacity(0.8), in: Capsule())
             }
         }
         .padding(.horizontal, 16)
@@ -388,29 +388,30 @@ struct InterrogationView: View {
 
     private var endConfirmOverlay: some View {
         ZStack {
-            Color.black.opacity(0.7).ignoresSafeArea()
+            DT.Colors.void.opacity(0.8).ignoresSafeArea()
                 .onTapGesture { showEndConfirm = false }
-            VStack(spacing: 16) {
+            VStack(spacing: DT.Space.lg) {
                 Text("End Interrogation?")
-                    .font(.system(size: 20, weight: .semibold, design: .serif))
-                    .foregroundStyle(.white)
+                    .font(DT.Typo.screenTitle)
+                    .foregroundStyle(DT.Colors.fog)
                 Text("You've found \(gameState.discoveredClues.count) clue(s) so far.")
-                    .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.7))
-                HStack(spacing: 16) {
+                    .font(DT.Typo.caption)
+                    .foregroundStyle(DT.Colors.steel)
+                HStack(spacing: DT.Space.lg) {
                     Button("Continue") { showEndConfirm = false }
                         .buttonStyle(.bordered)
-                        .tint(.white)
+                        .tint(DT.Colors.fog)
                     Button("End & Review") {
                         showEndConfirm = false
                         Task { await session.disconnect() }
                     }
                     .buttonStyle(.borderedProminent)
-                    .tint(.red)
+                    .tint(DT.Colors.ember)
                 }
             }
-            .padding(24)
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20))
+            .padding(DT.Space.xl)
+            .background(DT.Colors.surface, in: RoundedRectangle(cornerRadius: 20))
+            .overlay(RoundedRectangle(cornerRadius: 20).stroke(DT.Colors.ember.opacity(0.15), lineWidth: 0.5))
         }
     }
 
@@ -418,20 +419,22 @@ struct InterrogationView: View {
 
     private func notificationCard(_ card: NotificationCard) -> some View {
         HStack(spacing: 10) {
-            // Accent bar
+            // Accent bar with glow
             RoundedRectangle(cornerRadius: 2)
                 .fill(card.accentColor)
-                .frame(width: 3, height: 36)
+                .frame(width: 4, height: 36)
+                .shadow(color: card.accentColor.opacity(0.5), radius: 4)
 
             VStack(alignment: .leading, spacing: 2) {
                 if let label = card.label {
                     Text(label)
-                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                        .font(DT.Typo.tagLabel)
                         .foregroundStyle(card.accentColor)
                 }
                 Text(card.text)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.white)
+                    .font(DT.Typo.caption)
+                    .fontWeight(.medium)
+                    .foregroundStyle(DT.Colors.fog)
                     .lineLimit(2)
             }
 
@@ -445,13 +448,26 @@ struct InterrogationView: View {
             } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 9, weight: .bold))
-                    .foregroundStyle(.white.opacity(0.3))
+                    .foregroundStyle(DT.Colors.smoke)
                     .padding(6)
             }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .background {
+            ZStack {
+                RoundedRectangle(cornerRadius: DT.Radius.md)
+                    .fill(DT.Colors.surface.opacity(0.95))
+                // Colored tint from left
+                RoundedRectangle(cornerRadius: DT.Radius.md)
+                    .fill(
+                        LinearGradient(
+                            colors: [card.accentColor.opacity(0.08), .clear],
+                            startPoint: .leading, endPoint: .trailing
+                        )
+                    )
+            }
+        }
         .overlay(
             RoundedRectangle(cornerRadius: 12)
                 .stroke(card.accentColor.opacity(0.25), lineWidth: 1)

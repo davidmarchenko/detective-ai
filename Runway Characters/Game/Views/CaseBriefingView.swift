@@ -4,178 +4,172 @@ struct CaseBriefingView: View {
     @Bindable var gameState: GameState
     @State private var narration = NarrationService()
     @State private var narrationStarted = false
+    @State private var showContent = false
 
     var body: some View {
         if let mystery = gameState.mystery {
-            ZStack {
-                Color.black.ignoresSafeArea()
-
-                ScrollView {
-                    VStack(spacing: 24) {
-                        // Back button
-                        HStack {
-                            Button {
-                                narration.stop()
-                                gameState.resetToLobby()
-                            } label: {
-                                HStack(spacing: 4) {
-                                    Image(systemName: "chevron.left")
-                                    Text("Cases")
-                                }
-                                .font(.system(size: 15))
-                                .foregroundStyle(.orange)
-                            }
-                            Spacer()
-                        }
-                        .padding(.top, 8)
-
-                        // Case file header
-                        VStack(spacing: 8) {
-                            Image(systemName: "folder.fill")
-                                .font(.system(size: 40))
-                                .foregroundStyle(.orange)
-                            Text("CASE FILE")
-                                .font(.system(size: 14, weight: .bold, design: .monospaced))
-                                .foregroundStyle(.orange)
-                                .tracking(4)
-                            Text(mystery.title)
-                                .font(.system(size: 26, weight: .bold, design: .serif))
-                                .foregroundStyle(.white)
-                                .multilineTextAlignment(.center)
-                        }
-
-                        // Crime details
-                        VStack(alignment: .leading, spacing: 16) {
-                            detailRow(label: "VICTIM", value: mystery.victimName)
-                            detailRow(label: "LOCATION", value: mystery.setting)
-                            detailRow(label: "SUSPECTS", value: "\(mystery.suspects.count) persons of interest")
-
-                            Divider().background(.white.opacity(0.2))
-
-                            // Narrated briefing with synced captions
-                            NarratedTextView(
-                                text: mystery.briefing,
-                                narration: narration
-                            )
-                        }
-                        .padding(20)
-                        .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 12))
-
-                        // Narration controls
-                        HStack(spacing: 16) {
-                            Button {
-                                if narration.isPlaying || narration.isLoading {
-                                    narration.stop()
-                                } else {
-                                    Task { await narration.speakBriefing(scenarioId: mystery.id, text: narrationText(mystery)) }
-                                }
-                            } label: {
-                                HStack(spacing: 6) {
-                                    if narration.isLoading {
-                                        ProgressView()
-                                            .scaleEffect(0.7)
-                                            .tint(.orange)
-                                        Text("Loading narration...")
-                                    } else {
-                                        Image(systemName: narration.isPlaying ? "pause.fill" : "play.fill")
-                                        Text(narration.isPlaying ? "Pause" : "Listen to Briefing")
-                                    }
-                                }
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundStyle(.orange)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 10)
-                                .background(.orange.opacity(0.15), in: Capsule())
-                            }
-
-                            if narration.isPlaying && !narration.isLoading {
-                                HStack(spacing: 3) {
-                                    ForEach(0..<4, id: \.self) { i in
-                                        RoundedRectangle(cornerRadius: 1)
-                                            .fill(.orange)
-                                            .frame(width: 3, height: .random(in: 8...20))
-                                            .animation(
-                                                .easeInOut(duration: 0.4)
-                                                .repeatForever()
-                                                .delay(Double(i) * 0.1),
-                                                value: narration.isPlaying
-                                            )
-                                    }
-                                }
-                            }
-                        }
-
-                        // Suspect previews
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("PERSONS OF INTEREST")
-                                .font(.system(size: 12, weight: .bold, design: .monospaced))
-                                .foregroundStyle(.orange)
-                                .tracking(2)
-
-                            let suspects = gameState.mode == .quickPlay
-                                ? mystery.suspects.filter { $0.id == mystery.quickPlaySuspectId }
-                                : mystery.suspects
-
-                            ForEach(suspects) { suspect in
-                                VStack(alignment: .leading, spacing: 6) {
-                                    HStack(spacing: 12) {
-                                        Image(systemName: "person.crop.circle.fill")
-                                            .font(.title2)
-                                            .foregroundStyle(.white.opacity(0.5))
-                                        VStack(alignment: .leading, spacing: 2) {
-                                            Text(suspect.name)
-                                                .font(.headline)
-                                                .foregroundStyle(.white)
-                                            Text(suspect.role)
-                                                .font(.caption)
-                                                .foregroundStyle(.white.opacity(0.6))
-                                        }
-                                        Spacer()
-                                    }
-                                    Text(suspect.briefDescription)
-                                        .font(.system(size: 13, design: .serif))
-                                        .foregroundStyle(.white.opacity(0.5))
-                                        .lineSpacing(2)
-                                }
-                                .padding(12)
-                                .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 8))
-                            }
-                        }
-
-                        // Begin button
+            ScrollView {
+                VStack(spacing: DT.Space.xl) {
+                    // Back button
+                    HStack {
                         Button {
                             narration.stop()
-                            gameState.proceedFromBriefing()
+                            gameState.resetToLobby()
                         } label: {
-                            Text("Begin Investigation")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundStyle(.black)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                            .background(.orange, in: RoundedRectangle(cornerRadius: 12))
+                            HStack(spacing: 4) {
+                                Image(systemName: "chevron.left")
+                                Text("Cases")
+                            }
+                            .font(DT.Typo.caption)
+                            .foregroundStyle(DT.Colors.warmGlow)
                         }
-                        .padding(.top, 8)
-
-                        Spacer().frame(height: 40)
+                        Spacer()
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.top, DT.Space.sm)
+
+                    // Case file header — staggered entrance
+                    VStack(spacing: DT.Space.sm) {
+                        Image(systemName: "folder.fill")
+                            .font(.system(size: 40))
+                            .foregroundStyle(DT.Colors.warmGlow)
+                            .shadow(color: DT.Colors.warmGlow.opacity(0.3), radius: 12)
+                            .opacity(showContent ? 1 : 0)
+                            .offset(y: showContent ? 0 : 10)
+
+                        Text("CASE FILE")
+                            .font(DT.Typo.sectionLabel)
+                            .foregroundStyle(DT.Colors.warmGlow)
+                            .tracking(4)
+                            .opacity(showContent ? 1 : 0)
+
+                        Text(mystery.title)
+                            .font(DT.Typo.screenTitle)
+                            .foregroundStyle(DT.Colors.fog)
+                            .multilineTextAlignment(.center)
+                            .shadow(color: DT.Colors.warmGlow.opacity(0.15), radius: 16)
+                            .opacity(showContent ? 1 : 0)
+                            .offset(y: showContent ? 0 : 8)
+                    }
+
+                    // Crime details card
+                    VStack(alignment: .leading, spacing: DT.Space.lg) {
+                        detailRow(label: "VICTIM", value: mystery.victimName)
+                        Divider().background(DT.Colors.warmGlow.opacity(0.15))
+                        detailRow(label: "LOCATION", value: mystery.setting)
+                        Divider().background(DT.Colors.warmGlow.opacity(0.15))
+                        detailRow(label: "SUSPECTS", value: "\(mystery.suspects.count) persons of interest")
+                        Divider().background(DT.Colors.warmGlow.opacity(0.15))
+
+                        NarratedTextView(text: mystery.briefing, narration: narration)
+                    }
+                    .evidenceCard(accent: DT.Colors.warmGlow)
+
+                    // Narration controls
+                    HStack(spacing: DT.Space.lg) {
+                        Button {
+                            if narration.isPlaying || narration.isLoading {
+                                narration.stop()
+                            } else {
+                                Task { await narration.speakBriefing(scenarioId: mystery.id, text: narrationText(mystery)) }
+                            }
+                        } label: {
+                            HStack(spacing: 6) {
+                                if narration.isLoading {
+                                    ProgressView().scaleEffect(0.7).tint(DT.Colors.warmGlow)
+                                    Text("Loading...")
+                                } else {
+                                    Image(systemName: narration.isPlaying ? "pause.fill" : "play.fill")
+                                    Text(narration.isPlaying ? "Pause" : "Listen")
+                                }
+                            }
+                            .font(DT.Typo.caption)
+                            .fontWeight(.medium)
+                            .foregroundStyle(DT.Colors.warmGlow)
+                            .padding(.horizontal, DT.Space.lg)
+                            .padding(.vertical, DT.Space.md)
+                            .background(DT.Colors.warmGlow.opacity(0.12), in: Capsule())
+                            .overlay(Capsule().stroke(DT.Colors.warmGlow.opacity(0.2), lineWidth: 0.5))
+                        }
+
+                        if narration.isPlaying && !narration.isLoading {
+                            HStack(spacing: 3) {
+                                ForEach(0..<4, id: \.self) { i in
+                                    RoundedRectangle(cornerRadius: 1)
+                                        .fill(DT.Colors.warmGlow)
+                                        .frame(width: 3, height: .random(in: 8...20))
+                                        .animation(
+                                            .easeInOut(duration: 0.4).repeatForever().delay(Double(i) * 0.1),
+                                            value: narration.isPlaying
+                                        )
+                                }
+                            }
+                        }
+                    }
+
+                    // Suspects
+                    VStack(alignment: .leading, spacing: DT.Space.md) {
+                        NoirSectionLabel(text: "PERSONS OF INTEREST")
+
+                        let suspects = gameState.mode == .quickPlay
+                            ? mystery.suspects.filter { $0.id == mystery.quickPlaySuspectId }
+                            : mystery.suspects
+
+                        ForEach(suspects) { suspect in
+                            VStack(alignment: .leading, spacing: DT.Space.sm) {
+                                HStack(spacing: DT.Space.md) {
+                                    Image(systemName: "person.crop.circle.fill")
+                                        .font(.title2)
+                                        .foregroundStyle(DT.Colors.steel)
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(suspect.name)
+                                            .font(DT.Typo.cardTitle)
+                                            .foregroundStyle(DT.Colors.fog)
+                                        Text(suspect.role)
+                                            .font(DT.Typo.footnote)
+                                            .foregroundStyle(DT.Colors.steel)
+                                    }
+                                    Spacer()
+                                }
+                                Text(suspect.briefDescription)
+                                    .font(DT.Typo.evidence)
+                                    .foregroundStyle(DT.Colors.smoke)
+                                    .lineSpacing(2)
+                            }
+                            .suspectCard(status: DT.Colors.warmGlow)
+                        }
+                    }
+
+                    // Begin button
+                    Button {
+                        narration.stop()
+                        gameState.proceedFromBriefing()
+                    } label: {
+                        Text("Begin Investigation")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundStyle(DT.Colors.void)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, DT.Space.lg)
+                            .background(DT.Grad.buttonGradient(DT.Colors.warmGlow), in: RoundedRectangle(cornerRadius: DT.Radius.md))
+                    }
+                    .breathingGlow(DT.Colors.warmGlow)
+                    .padding(.top, DT.Space.sm)
+
+                    Spacer().frame(height: 40)
                 }
+                .padding(.horizontal, 20)
             }
-            .preferredColorScheme(.dark)
+            .noirBackground(ambient: DT.Colors.warmGlow)
             .task {
-                // Auto-start narration
+                withAnimation(.easeOut(duration: 0.8)) { showContent = true }
                 if !narrationStarted {
                     narrationStarted = true
                     await narration.speakBriefing(scenarioId: mystery.id, text: narrationText(mystery))
                 }
             }
-            .onDisappear {
-                narration.stop()
-            }
+            .onDisappear { narration.stop() }
         }
     }
 
-    /// Build the full narration script from the mystery
     private func narrationText(_ mystery: MysteryScenario) -> String {
         var script = mystery.briefing
         let suspects = gameState.mode == .quickPlay
@@ -190,17 +184,17 @@ struct CaseBriefingView: View {
     private func detailRow(label: String, value: String) -> some View {
         HStack(alignment: .top) {
             Text(label)
-                .font(.system(size: 11, weight: .bold, design: .monospaced))
-                .foregroundStyle(.orange)
+                .font(DT.Typo.tagLabel)
+                .foregroundStyle(DT.Colors.warmGlow)
                 .frame(width: 80, alignment: .leading)
             Text(value)
-                .font(.subheadline)
-                .foregroundStyle(.white.opacity(0.8))
+                .font(DT.Typo.caption)
+                .foregroundStyle(DT.Colors.fog.opacity(0.8))
         }
     }
 }
 
-// MARK: - Narrated Text View (word-by-word highlight)
+// MARK: - Narrated Text View
 
 struct NarratedTextView: View {
     let text: String
@@ -208,19 +202,16 @@ struct NarratedTextView: View {
 
     var body: some View {
         if narration.wordTimings.isEmpty || !narration.isPlaying {
-            // Static text when not narrating
             Text(text)
-                .font(.system(size: 16, design: .serif))
-                .foregroundStyle(.white.opacity(0.85))
+                .font(DT.Typo.bodySerif)
+                .foregroundStyle(DT.Colors.fog.opacity(0.85))
                 .lineSpacing(4)
         } else {
-            // Word-by-word highlighted text
             WrappingHStack(narration: narration)
         }
     }
 }
 
-/// Renders words with karaoke-style highlighting synced to narration
 private struct WrappingHStack: View {
     @Bindable var narration: NarrationService
 
@@ -228,7 +219,6 @@ private struct WrappingHStack: View {
         let words = narration.wordTimings
         let currentIndex = narration.currentWordIndex
 
-        // Build highlighted text by concatenating Text views
         VStack(alignment: .leading, spacing: 4) {
             words.enumerated().reduce(Text("")) { result, item in
                 let (i, timing) = item
@@ -236,18 +226,18 @@ private struct WrappingHStack: View {
                 let wordView: Text
                 if i == currentIndex {
                     wordView = Text(timing.word)
-                        .foregroundColor(.orange)
+                        .foregroundColor(DT.Colors.warmGlow)
                         .fontWeight(.semibold)
                 } else if i < currentIndex {
                     wordView = Text(timing.word)
-                        .foregroundColor(.white)
+                        .foregroundColor(DT.Colors.fog)
                 } else {
                     wordView = Text(timing.word)
-                        .foregroundColor(.white.opacity(0.3))
+                        .foregroundColor(DT.Colors.smoke)
                 }
                 return result + separator + wordView
             }
-            .font(.system(size: 16, design: .serif))
+            .font(DT.Typo.bodySerif)
             .lineSpacing(4)
             .animation(.easeOut(duration: 0.1), value: currentIndex)
         }

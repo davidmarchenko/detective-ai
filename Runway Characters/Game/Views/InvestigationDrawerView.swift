@@ -39,11 +39,12 @@ struct InvestigationDrawerView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") { isPresented = false }
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(DT.Colors.warmGlow)
                 }
             }
             .toolbarColorScheme(.dark, for: .navigationBar)
         }
+        .background(DT.Colors.void)
         .preferredColorScheme(.dark)
     }
 

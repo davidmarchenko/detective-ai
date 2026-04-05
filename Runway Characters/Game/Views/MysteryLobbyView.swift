@@ -7,104 +7,126 @@ struct MysteryLobbyView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: DT.Space.xl) {
                 // Header
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: DT.Space.sm) {
                     Text("Murder Mystery")
-                        .font(.system(size: 34, weight: .bold, design: .serif))
-                    Text("Interrogate suspects. Uncover clues. Solve the case.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.horizontal)
+                        .font(DT.Typo.displayTitle)
+                        .foregroundStyle(DT.Colors.fog)
+                        .shadow(color: DT.Colors.warmGlow.opacity(0.3), radius: 20)
 
-                // Mode picker
-                Picker("Game Mode", selection: $selectedMode) {
-                    Text("Quick Play (5 min)").tag(GameMode.quickPlay)
-                    Text("Full Case (30 min)").tag(GameMode.standardPlay)
+                    Text("Interrogate suspects. Uncover clues. Solve the case.")
+                        .font(DT.Typo.caption)
+                        .foregroundStyle(DT.Colors.steel)
                 }
-                .pickerStyle(.segmented)
-                .padding(.horizontal)
+                .padding(.horizontal, DT.Space.lg)
+                .padding(.top, DT.Space.xl)
+
+                // Mode toggle
+                HStack(spacing: DT.Space.sm) {
+                    modeButton("Quick Play", subtitle: "5 min", mode: .quickPlay)
+                    modeButton("Full Case", subtitle: "30 min", mode: .standardPlay)
+                }
+                .padding(.horizontal, DT.Space.lg)
 
                 // Cases
-                VStack(spacing: 16) {
+                VStack(spacing: DT.Space.lg) {
                     ForEach(scenarios) { scenario in
-                        CaseCard(scenario: scenario, mode: selectedMode) {
-                            gameState.startGame(mystery: scenario, mode: selectedMode)
-                        }
+                        caseCard(scenario)
                     }
 
                     if scenarios.isEmpty {
-                        ContentUnavailableView(
-                            "No Cases Available",
-                            systemImage: "magnifyingglass",
-                            description: Text("Mystery scenarios could not be loaded.")
-                        )
+                        VStack(spacing: DT.Space.md) {
+                            Image(systemName: "magnifyingglass")
+                                .font(.system(size: 36))
+                                .foregroundStyle(DT.Colors.smoke)
+                            Text("No cases available")
+                                .font(DT.Typo.caption)
+                                .foregroundStyle(DT.Colors.smoke)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 60)
                     }
                 }
-                .padding(.horizontal)
+                .padding(.horizontal, DT.Space.lg)
+
+                Spacer().frame(height: 40)
             }
-            .padding(.vertical)
         }
-        .navigationTitle("Cases")
+        .noirBackground(ambient: DT.Colors.warmGlow)
         .onAppear {
             scenarios = MysteryLoader.loadAll()
-            // Fallback: try loading by known name
             if scenarios.isEmpty, let s = MysteryLoader.load(named: "mystery_villa_morada") {
                 scenarios = [s]
             }
         }
     }
-}
 
-// MARK: - Case Card
+    // MARK: - Mode Toggle Button
 
-private struct CaseCard: View {
-    let scenario: MysteryScenario
-    let mode: GameMode
-    let onTap: () -> Void
+    private func modeButton(_ title: String, subtitle: String, mode: GameMode) -> some View {
+        let isSelected = selectedMode == mode
+        return Button { selectedMode = mode } label: {
+            VStack(spacing: DT.Space.xs) {
+                Text(title)
+                    .font(DT.Typo.caption)
+                    .fontWeight(isSelected ? .semibold : .regular)
+                Text(subtitle)
+                    .font(DT.Typo.footnote)
+                    .foregroundStyle(isSelected ? DT.Colors.warmGlow : DT.Colors.smoke)
+            }
+            .foregroundStyle(isSelected ? DT.Colors.fog : DT.Colors.steel)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, DT.Space.md)
+            .background(
+                RoundedRectangle(cornerRadius: DT.Radius.md)
+                    .fill(isSelected ? DT.Colors.warmGlow.opacity(0.12) : DT.Colors.surface)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: DT.Radius.md)
+                    .stroke(isSelected ? DT.Colors.warmGlow.opacity(0.3) : .clear, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
 
-    var body: some View {
-        Button(action: onTap) {
-            VStack(alignment: .leading, spacing: 12) {
+    // MARK: - Case Card
+
+    private func caseCard(_ scenario: MysteryScenario) -> some View {
+        Button {
+            gameState.startGame(mystery: scenario, mode: selectedMode)
+        } label: {
+            VStack(alignment: .leading, spacing: DT.Space.md) {
                 HStack {
                     Image(systemName: "eye.trianglebadge.exclamationmark")
                         .font(.title2)
-                        .foregroundStyle(.red)
+                        .foregroundStyle(DT.Colors.ember)
+                        .frame(width: 40, height: 40)
+                        .background(DT.Colors.ember.opacity(0.12), in: Circle())
                     Spacer()
-                    Text(mode == .quickPlay ? "5 min" : "30 min")
-                        .font(.caption.bold())
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(.ultraThinMaterial, in: Capsule())
+                    Text(selectedMode == .quickPlay ? "5 min" : "30 min")
+                        .font(DT.Typo.tagLabel)
+                        .foregroundStyle(DT.Colors.warmGlow)
+                        .padding(.horizontal, DT.Space.sm)
+                        .padding(.vertical, DT.Space.xs)
+                        .background(DT.Colors.surfaceRaised, in: Capsule())
                 }
 
                 Text(scenario.title)
-                    .font(.system(size: 20, weight: .semibold, design: .serif))
-                    .foregroundStyle(.primary)
+                    .font(DT.Typo.cardTitle)
+                    .foregroundStyle(DT.Colors.fog)
                     .multilineTextAlignment(.leading)
 
-                Text("Victim: \(scenario.victimName)")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-
-                Text("\(scenario.suspects.count) suspects")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                if mode == .quickPlay {
-                    Text("Interrogate 1 suspect")
-                        .font(.caption)
-                        .foregroundStyle(.orange)
-                } else {
-                    Text("Interrogate all \(scenario.suspects.count) suspects")
-                        .font(.caption)
-                        .foregroundStyle(.orange)
+                HStack(spacing: DT.Space.lg) {
+                    Label(scenario.victimName, systemImage: "person.fill.xmark")
+                        .font(DT.Typo.footnote)
+                        .foregroundStyle(DT.Colors.steel)
+                    Label("\(scenario.suspects.count) suspects", systemImage: "person.3.fill")
+                        .font(DT.Typo.footnote)
+                        .foregroundStyle(DT.Colors.steel)
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding()
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+            .suspectCard(status: DT.Colors.warmGlow)
         }
         .buttonStyle(.plain)
     }

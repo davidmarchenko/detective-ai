@@ -2,198 +2,235 @@ import SwiftUI
 
 struct VerdictView: View {
     @Bindable var gameState: GameState
-    @State private var revealPhase = 0  // 0=analyzing, 1=killer name, 2=result, 3=score, 4=truth
+    @State private var revealPhase = 0
     @State private var showExplanation = false
+    @State private var scanLineOffset: CGFloat = 0
+    @State private var typewriterText = ""
+    @State private var scoreValues: [Int] = [0, 0, 0, 0, 0] // animated counters
 
     var body: some View {
-        ZStack {
-            Color.black.ignoresSafeArea()
+        let isCorrect = gameState.score?.correctAccusation ?? false
 
-            ScrollView {
-                VStack(spacing: 28) {
-                    Spacer().frame(height: 40)
+        ScrollView {
+            VStack(spacing: DT.Space.xxl) {
+                Spacer().frame(height: 40)
 
-                    // Phase 0: Analyzing
-                    if revealPhase >= 0 {
-                        VStack(spacing: 12) {
-                            if revealPhase == 0 {
-                                ProgressView()
-                                    .scaleEffect(1.2)
-                                    .tint(.orange)
-                                Text("Analyzing evidence...")
-                                    .font(.system(size: 16, design: .serif))
-                                    .foregroundStyle(.white.opacity(0.6))
-                            }
+                // Phase 0: Analyzing
+                if revealPhase == 0 {
+                    VStack(spacing: DT.Space.lg) {
+                        // Scanning line
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 1)
+                                .fill(DT.Colors.warmGlow.opacity(0.6))
+                                .frame(width: 200, height: 2)
+                                .offset(y: scanLineOffset)
+                                .shadow(color: DT.Colors.warmGlow.opacity(0.4), radius: 6)
                         }
+                        .frame(height: 60)
+                        .clipped()
+
+                        Text("Analyzing evidence...")
+                            .font(DT.Typo.bodySerif)
+                            .foregroundStyle(DT.Colors.steel)
                     }
-
-                    // Phase 1: The killer was...
-                    if revealPhase >= 1 {
-                        VStack(spacing: 8) {
-                            Text("The killer was...")
-                                .font(.system(size: 16, design: .serif))
-                                .foregroundStyle(.white.opacity(0.5))
-                                .transition(.opacity)
-                        }
-                    }
-
-                    if revealPhase >= 2, let mystery = gameState.mystery {
-                        let guilty = mystery.suspects.first { $0.id == mystery.solution.guiltySubjectId }
-                        let correct = gameState.score?.correctAccusation ?? false
-
-                        VStack(spacing: 16) {
-                            // Guilty suspect name
-                            Text(guilty?.name ?? "Unknown")
-                                .font(.system(size: 32, weight: .bold, design: .serif))
-                                .foregroundStyle(.white)
-                                .transition(.scale.combined(with: .opacity))
-
-                            // Result seal
-                            Image(systemName: correct ? "checkmark.seal.fill" : "xmark.seal.fill")
-                                .font(.system(size: 56))
-                                .foregroundStyle(correct ? .green : .red)
-                                .symbolEffect(.bounce, value: revealPhase)
-
-                            Text(correct ? "CASE CLOSED" : "WRONG SUSPECT")
-                                .font(.system(size: 14, weight: .bold, design: .monospaced))
-                                .foregroundStyle(correct ? .green : .red)
-                                .tracking(3)
-
-                            if let score = gameState.score {
-                                Text(score.rating)
-                                    .font(.system(size: 24, weight: .bold, design: .serif))
-                                    .foregroundStyle(.white)
-                            }
-                        }
-                        .transition(.opacity.combined(with: .move(edge: .bottom)))
-                    }
-
-                    // Phase 3: Score breakdown
-                    if revealPhase >= 3, let score = gameState.score {
-                        VStack(spacing: 12) {
-                            scoreRow("Clues Found", value: "\(score.cluesFound)/\(score.totalClues)", pts: score.cluesFound * 10)
-                            scoreRow("Contradictions", value: "\(score.contradictionsCaught)", pts: score.contradictionsCaught * 25)
-                            scoreRow("Correct Suspect", value: score.correctAccusation ? "Yes" : "No", pts: score.correctAccusation ? 100 : 0)
-                            scoreRow("Correct Motive", value: score.correctMotive ? "Yes" : "No", pts: score.correctMotive ? 50 : 0)
-
-                            Divider().background(.white.opacity(0.2))
-
-                            HStack {
-                                Text("TOTAL")
-                                    .font(.system(size: 14, weight: .bold, design: .monospaced))
-                                    .foregroundStyle(.orange)
-                                Spacer()
-                                Text("\(score.totalPoints) pts")
-                                    .font(.system(size: 22, weight: .bold).monospacedDigit())
-                                    .foregroundStyle(.orange)
-                            }
-                        }
-                        .padding(20)
-                        .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 12))
-                        .transition(.opacity.combined(with: .move(edge: .bottom)))
-                    }
-
-                    // Phase 4: The truth
-                    if revealPhase >= 4, let mystery = gameState.mystery {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Button {
-                                withAnimation { showExplanation.toggle() }
-                            } label: {
-                                HStack {
-                                    Text("THE FULL STORY")
-                                        .font(.system(size: 12, weight: .bold, design: .monospaced))
-                                        .foregroundStyle(.orange)
-                                        .tracking(2)
-                                    Spacer()
-                                    Image(systemName: showExplanation ? "chevron.up" : "chevron.down")
-                                        .foregroundStyle(.orange)
-                                }
-                            }
-
-                            if showExplanation {
-                                VStack(alignment: .leading, spacing: 10) {
-                                    Text("Motive")
-                                        .font(.system(size: 11, weight: .bold, design: .monospaced))
-                                        .foregroundStyle(.orange)
-                                    Text(mystery.solution.motive)
-                                        .font(.system(size: 14, design: .serif))
-                                        .foregroundStyle(.white.opacity(0.8))
-                                        .lineSpacing(3)
-
-                                    Text("What Happened")
-                                        .font(.system(size: 11, weight: .bold, design: .monospaced))
-                                        .foregroundStyle(.orange)
-                                        .padding(.top, 4)
-                                    Text(mystery.solution.explanation)
-                                        .font(.system(size: 14, design: .serif))
-                                        .foregroundStyle(.white.opacity(0.8))
-                                        .lineSpacing(3)
-                                }
-                                .transition(.opacity)
-                            }
-                        }
-                        .padding(20)
-                        .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 12))
-                        .transition(.opacity)
-
-                        // Action buttons
-                        VStack(spacing: 12) {
-                            Button {
-                                gameState.replayCurrentCase()
-                            } label: {
-                                Text("Play Again")
-                                    .font(.system(size: 17, weight: .semibold))
-                                    .foregroundStyle(.black)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 14)
-                                    .background(.orange, in: RoundedRectangle(cornerRadius: 12))
-                            }
-
-                            Button {
-                                gameState.resetToLobby()
-                            } label: {
-                                Text("Return to Cases")
-                                    .font(.system(size: 15, weight: .medium))
-                                    .foregroundStyle(.white.opacity(0.6))
-                            }
-                        }
-                        .padding(.top, 8)
-                    }
-
-                    Spacer().frame(height: 40)
                 }
-                .padding(.horizontal, 20)
+
+                // Phase 1: "The killer was..."
+                if revealPhase >= 1 {
+                    Text(typewriterText)
+                        .font(DT.Typo.bodySerif)
+                        .foregroundStyle(DT.Colors.steel)
+                        .transition(.opacity)
+                }
+
+                // Phase 2: Name + seal
+                if revealPhase >= 2, let mystery = gameState.mystery {
+                    let guilty = mystery.suspects.first { $0.id == mystery.solution.guiltySubjectId }
+
+                    VStack(spacing: DT.Space.lg) {
+                        Text(guilty?.name ?? "Unknown")
+                            .font(DT.Typo.displayTitle)
+                            .foregroundStyle(DT.Colors.fog)
+                            .shadow(color: (isCorrect ? DT.Colors.success : DT.Colors.ember).opacity(0.3), radius: 16)
+                            .transition(.scale.combined(with: .opacity))
+
+                        Image(systemName: isCorrect ? "checkmark.seal.fill" : "xmark.seal.fill")
+                            .font(.system(size: 56))
+                            .foregroundStyle(isCorrect ? DT.Colors.success : DT.Colors.ember)
+                            .shadow(color: (isCorrect ? DT.Colors.success : DT.Colors.ember).opacity(0.5), radius: 12)
+                            .symbolEffect(.bounce, value: revealPhase)
+
+                        NoirSectionLabel(
+                            text: isCorrect ? "CASE CLOSED" : "WRONG SUSPECT",
+                            color: isCorrect ? DT.Colors.success : DT.Colors.ember
+                        )
+                        .tracking(3)
+
+                        if let score = gameState.score {
+                            Text(score.rating)
+                                .font(DT.Typo.screenTitle)
+                                .foregroundStyle(DT.Colors.fog)
+                        }
+                    }
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+                }
+
+                // Phase 3: Score breakdown
+                if revealPhase >= 3, let score = gameState.score {
+                    VStack(spacing: DT.Space.md) {
+                        scoreRow("Clues Found", value: "\(score.cluesFound)/\(score.totalClues)", pts: scoreValues[0], target: score.cluesFound * 10)
+                        scoreRow("Contradictions", value: "\(score.contradictionsCaught)", pts: scoreValues[1], target: score.contradictionsCaught * 25)
+                        scoreRow("Correct Suspect", value: score.correctAccusation ? "Yes" : "No", pts: scoreValues[2], target: score.correctAccusation ? 100 : 0)
+                        scoreRow("Correct Motive", value: score.correctMotive ? "Yes" : "No", pts: scoreValues[3], target: score.correctMotive ? 50 : 0)
+
+                        Divider().background(DT.Colors.warmGlow.opacity(0.2))
+
+                        HStack {
+                            Text("TOTAL")
+                                .font(DT.Typo.sectionLabel)
+                                .foregroundStyle(DT.Colors.warmGlow)
+                            Spacer()
+                            Text("\(scoreValues[4]) pts")
+                                .font(.system(size: 22, weight: .bold).monospacedDigit())
+                                .foregroundStyle(DT.Colors.warmGlow)
+                                .shadow(color: DT.Colors.warmGlow.opacity(0.3), radius: 8)
+                        }
+                    }
+                    .evidenceCard(accent: DT.Colors.warmGlow)
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+                }
+
+                // Phase 4: The truth
+                if revealPhase >= 4, let mystery = gameState.mystery {
+                    VStack(alignment: .leading, spacing: DT.Space.md) {
+                        Button { withAnimation { showExplanation.toggle() } } label: {
+                            HStack {
+                                NoirSectionLabel(text: "THE FULL STORY")
+                                Spacer()
+                                Image(systemName: showExplanation ? "chevron.up" : "chevron.down")
+                                    .foregroundStyle(DT.Colors.warmGlow)
+                            }
+                        }
+
+                        if showExplanation {
+                            VStack(alignment: .leading, spacing: DT.Space.md) {
+                                NoirSectionLabel(text: "MOTIVE")
+                                Text(mystery.solution.motive)
+                                    .font(DT.Typo.bodySerif)
+                                    .foregroundStyle(DT.Colors.fog.opacity(0.8))
+                                    .lineSpacing(3)
+
+                                NoirSectionLabel(text: "WHAT HAPPENED")
+                                Text(mystery.solution.explanation)
+                                    .font(DT.Typo.bodySerif)
+                                    .foregroundStyle(DT.Colors.fog.opacity(0.8))
+                                    .lineSpacing(3)
+                            }
+                            .transition(.opacity)
+                        }
+                    }
+                    .evidenceCard(accent: DT.Colors.steel)
+                    .transition(.opacity)
+
+                    // Action buttons
+                    VStack(spacing: DT.Space.md) {
+                        Button { gameState.replayCurrentCase() } label: {
+                            Text("Play Again")
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundStyle(DT.Colors.void)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                                .background(DT.Grad.buttonGradient(DT.Colors.warmGlow), in: RoundedRectangle(cornerRadius: DT.Radius.md))
+                        }
+
+                        Button { gameState.resetToLobby() } label: {
+                            Text("Return to Cases")
+                                .font(DT.Typo.caption)
+                                .foregroundStyle(DT.Colors.steel)
+                        }
+                    }
+                    .padding(.top, DT.Space.sm)
+                }
+
+                Spacer().frame(height: 40)
             }
+            .padding(.horizontal, 20)
         }
-        .preferredColorScheme(.dark)
+        .noirBackground(ambient: revealPhase >= 2 ? (isCorrect ? DT.Colors.success : DT.Colors.ember) : .clear)
         .animation(.easeOut(duration: 0.5), value: revealPhase)
         .task {
-            // Dramatic reveal sequence
+            // Scanning line animation
+            withAnimation(.easeInOut(duration: 1).repeatForever(autoreverses: true)) {
+                scanLineOffset = 20
+            }
+
+            // Phase 0 → 1
             try? await Task.sleep(for: .seconds(1.5))
             revealPhase = 1
-            try? await Task.sleep(for: .seconds(1.5))
+
+            // Typewriter effect
+            let fullText = "The killer was..."
+            for (i, char) in fullText.enumerated() {
+                try? await Task.sleep(for: .seconds(0.06))
+                typewriterText = String(fullText.prefix(i + 1))
+                _ = char // suppress warning
+            }
+
+            // Phase 2: reveal
+            try? await Task.sleep(for: .seconds(0.8))
             revealPhase = 2
+
+            // Phase 3: score
             try? await Task.sleep(for: .seconds(1.5))
             revealPhase = 3
-            try? await Task.sleep(for: .seconds(1.0))
+            await animateScores()
+
+            // Phase 4: truth
+            try? await Task.sleep(for: .seconds(0.5))
             revealPhase = 4
             try? await Task.sleep(for: .seconds(0.5))
             showExplanation = true
         }
     }
 
-    private func scoreRow(_ label: String, value: String, pts: Int) -> some View {
+    // MARK: - Score Animation
+
+    private func animateScores() async {
+        guard let score = gameState.score else { return }
+        let targets = [
+            score.cluesFound * 10,
+            score.contradictionsCaught * 25,
+            score.correctAccusation ? 100 : 0,
+            score.correctMotive ? 50 : 0,
+            score.totalPoints
+        ]
+
+        for (index, target) in targets.enumerated() {
+            let steps = 20
+            for step in 0...steps {
+                let value = Int(Double(target) * Double(step) / Double(steps))
+                scoreValues[index] = value
+                try? await Task.sleep(for: .seconds(0.02))
+            }
+            try? await Task.sleep(for: .seconds(0.1))
+        }
+    }
+
+    // MARK: - Score Row
+
+    private func scoreRow(_ label: String, value: String, pts: Int, target: Int) -> some View {
         HStack {
             Text(label)
-                .font(.system(size: 14))
-                .foregroundStyle(.white.opacity(0.7))
+                .font(DT.Typo.caption)
+                .foregroundStyle(DT.Colors.steel)
             Spacer()
             Text(value)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(.white)
+                .font(DT.Typo.caption)
+                .fontWeight(.medium)
+                .foregroundStyle(DT.Colors.fog)
             Text("+\(pts)")
-                .font(.system(size: 14, weight: .bold).monospacedDigit())
-                .foregroundStyle(.orange)
+                .font(DT.Typo.data)
+                .foregroundStyle(DT.Colors.warmGlow)
                 .frame(width: 50, alignment: .trailing)
         }
     }
