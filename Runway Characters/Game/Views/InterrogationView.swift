@@ -44,10 +44,13 @@ struct InterrogationView: View {
                 VStack {
                     Spacer()
                     notificationCard(card)
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 100)
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 70) // above the 60pt control bar
                 }
-                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .transition(.asymmetric(
+                    insertion: .move(edge: .leading).combined(with: .opacity),
+                    removal: .opacity
+                ))
                 .animation(.spring(duration: 0.35), value: activeCard?.id)
             }
 
@@ -224,51 +227,47 @@ struct InterrogationView: View {
                 }
                 .stroke(DT.Colors.warmGlow.opacity(0.3), lineWidth: 1)
 
-            HStack(alignment: .center) {
+            HStack(alignment: .center, spacing: DT.Space.md) {
                 // Suspect name plate
                 VStack(alignment: .leading, spacing: 1) {
                     Text(suspect.name.uppercased())
-                        .font(.system(size: 15, weight: .black, design: .monospaced))
+                        .font(.system(size: 14, weight: .black, design: .monospaced))
                         .foregroundStyle(DT.Colors.fog)
                         .tracking(1)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
                     Text(suspect.role.uppercased())
                         .font(.system(size: 9, weight: .bold, design: .monospaced))
                         .foregroundStyle(DT.Colors.warmGlow.opacity(0.6))
                         .tracking(2)
+                        .lineLimit(1)
                 }
 
-                Spacer()
+                Spacer(minLength: 4)
 
-                // Suspicion meter — angular bar
+                // Suspicion meter
                 if gameState.gameMaster.suspicionLevel > 0 {
-                    HStack(spacing: 6) {
+                    HStack(spacing: 4) {
                         Text("SUS")
-                            .font(.system(size: 8, weight: .black, design: .monospaced))
+                            .font(.system(size: 7, weight: .black, design: .monospaced))
                             .foregroundStyle(suspicionColor.opacity(0.7))
-                        GeometryReader { geo in
-                            ZStack(alignment: .leading) {
-                                // Track
-                                UnevenRoundedRectangle(bottomTrailingRadius: 4, topTrailingRadius: 4)
-                                    .fill(DT.Colors.surface)
-                                // Fill
-                                UnevenRoundedRectangle(bottomTrailingRadius: 4, topTrailingRadius: 4)
-                                    .fill(suspicionColor)
-                                    .frame(width: geo.size.width * gameState.gameMaster.suspicionLevel)
-                                    .shadow(color: suspicionColor.opacity(0.6), radius: 4)
-                                    .animation(.easeOut(duration: 0.5), value: gameState.gameMaster.suspicionLevel)
-                            }
+                        ZStack(alignment: .leading) {
+                            Capsule().fill(DT.Colors.surface).frame(width: 36, height: 4)
+                            Capsule().fill(suspicionColor)
+                                .frame(width: 36 * gameState.gameMaster.suspicionLevel, height: 4)
+                                .shadow(color: suspicionColor.opacity(0.6), radius: 3)
+                                .animation(.easeOut(duration: 0.5), value: gameState.gameMaster.suspicionLevel)
                         }
-                        .frame(width: 50, height: 6)
                     }
                 }
 
                 // Clue count
                 if !gameState.discoveredClues.isEmpty {
-                    HStack(spacing: 3) {
+                    HStack(spacing: 2) {
                         Image(systemName: "magnifyingglass")
-                            .font(.system(size: 9))
+                            .font(.system(size: 8))
                         Text("\(gameState.discoveredClues.count)")
-                            .font(.system(size: 13, weight: .black).monospacedDigit())
+                            .font(.system(size: 12, weight: .black).monospacedDigit())
                     }
                     .foregroundStyle(DT.Colors.warmGlow)
                 }
@@ -276,12 +275,12 @@ struct InterrogationView: View {
                 // Timer
                 if let callStart {
                     CallTimerView(startDate: callStart)
-                        .font(.system(size: 13, weight: .bold).monospacedDigit())
+                        .font(.system(size: 12, weight: .bold).monospacedDigit())
                         .foregroundStyle(DT.Colors.fog.opacity(0.7))
                 }
             }
-                .padding(.horizontal, 16)
-                .padding(.top, 8)
+            .padding(.horizontal, 16)
+            .padding(.top, 10)
             }
         }
         .frame(height: 58)
@@ -297,24 +296,24 @@ struct InterrogationView: View {
                         let isUser = entry.role == "user"
                         HStack(alignment: .top, spacing: 8) {
                             // Role tag
-                            Text(isUser ? "DET." : "SUS.")
-                                .font(.system(size: 8, weight: .black, design: .monospaced))
+                            Text(isUser ? "YOU" : suspect.name.components(separatedBy: " ").first?.uppercased() ?? "SUS.")
+                                .font(.system(size: 8, weight: .bold, design: .monospaced))
                                 .foregroundStyle(isUser ? DT.Colors.suggestion : DT.Colors.warmGlow)
-                                .frame(width: 28, alignment: .trailing)
+                                .frame(width: 36, alignment: .trailing)
                                 .padding(.top, 3)
 
-                            // Accent line
+                            // Accent line (fixed width, auto height)
                             Rectangle()
-                                .fill(isUser ? DT.Colors.suggestion.opacity(0.3) : DT.Colors.warmGlow.opacity(0.2))
+                                .fill(isUser ? DT.Colors.suggestion.opacity(0.4) : DT.Colors.warmGlow.opacity(0.3))
                                 .frame(width: 2)
-                                .padding(.vertical, 2)
 
                             // Text
                             Text(entry.text)
-                                .font(.system(size: 13, design: .serif))
-                                .foregroundStyle(isUser ? DT.Colors.fog.opacity(0.7) : DT.Colors.fog)
-                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .font(.system(size: 13))
+                                .foregroundStyle(isUser ? DT.Colors.fog.opacity(0.6) : DT.Colors.fog.opacity(0.9))
+                                .fixedSize(horizontal: false, vertical: true)
                         }
+                        .padding(.vertical, 3)
                         .id(entry.id)
                     }
                 }
@@ -385,8 +384,12 @@ struct InterrogationView: View {
                     .background(DT.Colors.ember.opacity(0.9))
                 }
             }
-            .frame(height: 60)
+            .frame(height: 56)
             .background(DT.Colors.void.opacity(0.95))
+
+            // Safe area padding for home indicator
+            DT.Colors.void.opacity(0.95)
+                .frame(height: 20)
         }
     }
 
@@ -580,54 +583,50 @@ struct InterrogationView: View {
 
     private func notificationCard(_ card: NotificationCard) -> some View {
         HStack(spacing: 0) {
-            // Solid accent stripe (wide, bold)
+            // Accent stripe
             Rectangle()
                 .fill(card.accentColor)
-                .frame(width: 5)
-                .shadow(color: card.accentColor.opacity(0.6), radius: 6)
+                .frame(width: 4)
+                .shadow(color: card.accentColor.opacity(0.5), radius: 4)
 
-            HStack(spacing: DT.Space.md) {
-                VStack(alignment: .leading, spacing: 2) {
-                    if let label = card.label {
-                        Text(label)
-                            .font(.system(size: 9, weight: .black, design: .monospaced))
-                            .foregroundStyle(card.accentColor)
-                            .tracking(2)
-                    }
-                    Text(card.text)
-                        .font(DT.Typo.caption)
-                        .foregroundStyle(DT.Colors.fog)
-                        .lineLimit(2)
+            VStack(alignment: .leading, spacing: 4) {
+                if let label = card.label {
+                    Text(label)
+                        .font(.system(size: 9, weight: .black, design: .monospaced))
+                        .foregroundStyle(card.accentColor)
+                        .tracking(1)
                 }
-
-                Spacer(minLength: 0)
-
-                Button {
-                    withAnimation { activeCard = nil }
-                    if let questionId = card.questionId {
-                        gameState.usedQuestionIds.insert(questionId)
-                    }
-                } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundStyle(DT.Colors.smoke)
-                        .padding(8)
-                }
+                Text(card.text)
+                    .font(.system(size: 13))
+                    .foregroundStyle(DT.Colors.fog)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .padding(.horizontal, DT.Space.md)
-            .padding(.vertical, DT.Space.md)
-        }
-        .background(DT.Colors.void.opacity(0.92))
-        .overlay(
-            // Top + bottom accent lines
-            VStack {
-                Rectangle().fill(card.accentColor.opacity(0.2)).frame(height: 0.5)
-                Spacer()
-                Rectangle().fill(card.accentColor.opacity(0.1)).frame(height: 0.5)
+            .padding(.vertical, DT.Space.sm)
+
+            Spacer(minLength: 0)
+
+            Button {
+                withAnimation { activeCard = nil }
+                if let questionId = card.questionId {
+                    gameState.usedQuestionIds.insert(questionId)
+                }
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(DT.Colors.smoke)
+                    .frame(width: 32, height: 32)
             }
-        )
-        .clipShape(UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: 0, bottomTrailingRadius: DT.Radius.sm, topTrailingRadius: DT.Radius.sm))
-        .shadow(color: card.accentColor.opacity(0.2), radius: 8, y: 2)
+            .padding(.trailing, DT.Space.sm)
+        }
+        .frame(minHeight: 48)
+        .background(DT.Colors.void.opacity(0.93))
+        .overlay(alignment: .top) {
+            Rectangle().fill(card.accentColor.opacity(0.15)).frame(height: 0.5)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: DT.Radius.sm))
+        .shadow(color: card.accentColor.opacity(0.15), radius: 6, y: 2)
     }
 
     private func showCard(_ card: NotificationCard, duration: TimeInterval = 6) {
