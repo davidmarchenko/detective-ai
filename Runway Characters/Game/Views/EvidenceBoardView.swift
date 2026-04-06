@@ -134,13 +134,12 @@ struct EvidenceBoardView: View {
 
     private func clueCard(_ clue: DiscoveredClue) -> some View {
         let color = clueColor(clue.importance)
-        return HStack(alignment: .top, spacing: 0) {
-            // Accent bar
-            RoundedRectangle(cornerRadius: 2)
+        return HStack(alignment: .top, spacing: 10) {
+            Circle()
                 .fill(color)
-                .frame(width: 3)
+                .frame(width: 8, height: 8)
+                .padding(.top, 5)
 
-            // Content
             VStack(alignment: .leading, spacing: 4) {
                 Text(clue.text)
                     .font(.system(size: 14))
@@ -150,16 +149,10 @@ struct EvidenceBoardView: View {
                     .font(.system(size: 11))
                     .foregroundStyle(DT.Colors.smoke)
             }
-            .padding(.leading, 10)
-            .padding(.vertical, 2)
         }
-        .padding(12)
+        .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(DT.Colors.surface, in: RoundedRectangle(cornerRadius: 12))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(color.opacity(0.15), lineWidth: 0.5)
-        )
     }
 
     // MARK: - Helpers
