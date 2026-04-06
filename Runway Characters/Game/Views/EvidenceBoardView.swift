@@ -5,15 +5,15 @@ struct EvidenceBoardView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: DT.Space.xl) {
+            VStack(alignment: .leading, spacing: 20) {
                 // Header
                 VStack(spacing: DT.Space.sm) {
                     Image(systemName: "pin.circle.fill")
                         .font(.system(size: 36))
                         .foregroundStyle(DT.Colors.warmGlow)
-                        .shadow(color: DT.Colors.warmGlow.opacity(0.3), radius: 10)
                     NoirSectionLabel(text: "EVIDENCE BOARD")
                 }
+                .frame(maxWidth: .infinity)
                 .padding(.top, DT.Space.lg)
 
                 if gameState.discoveredClues.isEmpty && gameState.contradictions.isEmpty {
@@ -25,12 +25,13 @@ struct EvidenceBoardView: View {
                             .font(DT.Typo.caption)
                             .foregroundStyle(DT.Colors.smoke)
                     }
+                    .frame(maxWidth: .infinity)
                     .padding(.top, 40)
                 }
 
                 // Clues
                 if !gameState.discoveredClues.isEmpty {
-                    VStack(alignment: .leading, spacing: DT.Space.md) {
+                    VStack(alignment: .leading, spacing: 12) {
                         NoirSectionLabel(text: "CLUES (\(gameState.discoveredClues.count))")
 
                         // Legend
@@ -43,93 +44,84 @@ struct EvidenceBoardView: View {
                         .foregroundStyle(DT.Colors.smoke)
 
                         ForEach(gameState.discoveredClues) { clue in
-                            HStack(alignment: .top, spacing: DT.Space.md) {
-                                Circle()
-                                    .fill(clueColor(clue.importance))
-                                    .frame(width: 8, height: 8)
-                                    .shadow(color: clueColor(clue.importance).opacity(0.5), radius: 4)
-                                    .padding(.top, 5)
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(clue.text)
-                                        .font(DT.Typo.evidence)
-                                        .foregroundStyle(DT.Colors.fog.opacity(0.85))
-                                    Text("From: \(suspectName(clue.suspectId))")
-                                        .font(DT.Typo.tagLabel)
-                                        .foregroundStyle(DT.Colors.smoke)
-                                }
-                            }
-                            .evidenceCard(accent: clueColor(clue.importance))
+                            clueCard(clue)
                         }
                     }
                 }
 
                 // Contradictions
                 if !gameState.contradictions.isEmpty {
-                    VStack(alignment: .leading, spacing: DT.Space.md) {
+                    VStack(alignment: .leading, spacing: 12) {
                         NoirSectionLabel(text: "CONTRADICTIONS (\(gameState.contradictions.count))", color: DT.Colors.ember)
 
                         ForEach(Array(gameState.contradictions.enumerated()), id: \.offset) { _, item in
-                            VStack(alignment: .leading, spacing: DT.Space.sm) {
+                            VStack(alignment: .leading, spacing: 6) {
                                 Text(suspectName(item.suspectId))
-                                    .font(DT.Typo.tagLabel)
+                                    .font(.system(size: 12, weight: .bold))
                                     .foregroundStyle(DT.Colors.ember)
                                 Text("Said: \"\(item.original)\"")
-                                    .font(DT.Typo.footnote)
+                                    .font(.system(size: 13))
                                     .foregroundStyle(DT.Colors.smoke)
                                     .strikethrough()
                                 Text("Then: \"\(item.corrected)\"")
-                                    .font(DT.Typo.footnote)
-                                    .fontWeight(.medium)
+                                    .font(.system(size: 13, weight: .medium))
                                     .foregroundStyle(DT.Colors.fog.opacity(0.85))
                             }
-                            .evidenceCard(accent: DT.Colors.ember)
+                            .padding(14)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(DT.Colors.surface, in: RoundedRectangle(cornerRadius: 12))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(DT.Colors.ember.opacity(0.15), lineWidth: 0.5)
+                            )
                         }
                     }
                 }
 
                 // Suspicion shifts
                 if !gameState.suspicionShifts.isEmpty {
-                    VStack(alignment: .leading, spacing: DT.Space.md) {
+                    VStack(alignment: .leading, spacing: 12) {
                         NoirSectionLabel(text: "SUSPECT ACCUSATIONS", color: DT.Colors.suspicion)
 
                         ForEach(Array(gameState.suspicionShifts.enumerated()), id: \.offset) { _, shift in
-                            HStack(spacing: DT.Space.sm) {
+                            HStack(alignment: .top, spacing: 8) {
                                 Image(systemName: "arrow.right")
                                     .font(.caption)
                                     .foregroundStyle(DT.Colors.suspicion)
+                                    .padding(.top, 2)
                                 Text("\(suspectName(shift.from)) blames \(shift.target): \"\(shift.reason)\"")
-                                    .font(DT.Typo.footnote)
+                                    .font(.system(size: 13))
                                     .foregroundStyle(DT.Colors.fog.opacity(0.7))
                             }
-                            .evidenceCard(accent: DT.Colors.suspicion)
+                            .padding(14)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(DT.Colors.surface, in: RoundedRectangle(cornerRadius: 12))
                         }
                     }
                 }
 
                 // Navigation
-                HStack(spacing: DT.Space.md) {
+                HStack(spacing: 12) {
                     Button { gameState.returnToSuspectBoard() } label: {
                         Text("Back to Suspects")
-                            .font(DT.Typo.caption)
-                            .fontWeight(.semibold)
+                            .font(.system(size: 14, weight: .semibold))
                             .foregroundStyle(DT.Colors.fog)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
-                            .background(DT.Colors.surface, in: RoundedRectangle(cornerRadius: DT.Radius.md))
-                            .overlay(RoundedRectangle(cornerRadius: DT.Radius.md).stroke(DT.Colors.steel.opacity(0.2), lineWidth: 0.5))
+                            .background(DT.Colors.surface, in: RoundedRectangle(cornerRadius: 12))
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(DT.Colors.steel.opacity(0.2), lineWidth: 0.5))
                     }
 
                     Button { gameState.goToAccusation() } label: {
                         Text("Make Accusation")
-                            .font(DT.Typo.caption)
-                            .fontWeight(.semibold)
+                            .font(.system(size: 14, weight: .semibold))
                             .foregroundStyle(DT.Colors.fog)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
-                            .background(DT.Grad.buttonGradient(DT.Colors.ember), in: RoundedRectangle(cornerRadius: DT.Radius.md))
+                            .background(DT.Colors.ember, in: RoundedRectangle(cornerRadius: 12))
                     }
                 }
-                .padding(.top, DT.Space.sm)
+                .padding(.top, 8)
 
                 Spacer().frame(height: 40)
             }
@@ -137,6 +129,40 @@ struct EvidenceBoardView: View {
         }
         .noirBackground(ambient: DT.Colors.suggestion)
     }
+
+    // MARK: - Clue Card (simple, no evidenceCard modifier)
+
+    private func clueCard(_ clue: DiscoveredClue) -> some View {
+        let color = clueColor(clue.importance)
+        return HStack(alignment: .top, spacing: 0) {
+            // Accent bar
+            RoundedRectangle(cornerRadius: 2)
+                .fill(color)
+                .frame(width: 3)
+
+            // Content
+            VStack(alignment: .leading, spacing: 4) {
+                Text(clue.text)
+                    .font(.system(size: 14))
+                    .foregroundStyle(DT.Colors.fog.opacity(0.85))
+                    .fixedSize(horizontal: false, vertical: true)
+                Text("From: \(suspectName(clue.suspectId))")
+                    .font(.system(size: 11))
+                    .foregroundStyle(DT.Colors.smoke)
+            }
+            .padding(.leading, 10)
+            .padding(.vertical, 2)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(DT.Colors.surface, in: RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(color.opacity(0.15), lineWidth: 0.5)
+        )
+    }
+
+    // MARK: - Helpers
 
     private func suspectName(_ id: String) -> String {
         gameState.suspect(for: id)?.name ?? id
@@ -154,7 +180,6 @@ struct EvidenceBoardView: View {
     private func legendDot(color: Color, label: String) -> some View {
         HStack(spacing: 4) {
             Circle().fill(color).frame(width: 6, height: 6)
-                .shadow(color: color.opacity(0.4), radius: 3)
             Text(label)
         }
     }
